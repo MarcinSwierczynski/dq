@@ -1,0 +1,21 @@
+.ai/agentic.config.json
+  s_d5d1a93df045d4::t_f852c47d37b9f2 1-17
+docs/specs/2026-11-20-dq-rule-engine.md
+  s_d5d1a93df045d4::t_81bcf916d782ef 1-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0a92cfa3ae0435102bc512be3b6a8b3e2eeec80",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
