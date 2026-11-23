@@ -86,7 +86,7 @@ class JsonArraySourceTest {
     }
 
     @Test
-    void malformedJsonAbortsTheRun() {
+    void malformedJsonAbortsTheRunAfterDeliveringWhatWasRead() {
         var listener = new CollectingListener();
         String truncated = "[{\"id\":\"r1\",\"country\":\"DE\",\"vatId\":\"DE111111111\",\"iban\":\"DE1\"}, {\"id\":\"r2\",";
 
@@ -94,9 +94,10 @@ class JsonArraySourceTest {
                 .isInstanceOfSatisfying(ValidationRunException.class, e -> {
                     assertThat(e.getCause()).isInstanceOf(RecordSourceException.class);
                     assertThat(e.partialSummary().status()).isEqualTo(RunStatus.ABORTED);
-                    assertThat(e.partialSummary().recordsRead()).isZero();
+                    assertThat(e.partialSummary().recordsRead()).isEqualTo(1);
+                    assertThat(e.partialSummary().resultCount()).isEqualTo(3);
                 });
-        assertThat(listener.results()).isEmpty();
+        assertThat(listener.results()).hasSize(3);
     }
 
     @Test
