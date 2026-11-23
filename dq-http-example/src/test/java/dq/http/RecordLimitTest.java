@@ -20,12 +20,12 @@ class RecordLimitTest {
     MockMvc mvc;
 
     @Test
-    void bufferedResponseOverTheLimitIs413() throws Exception {
+    void bufferedResponseOverTheLimitIs413WithAStreamingHint() throws Exception {
         mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON)
                         .content(ValidationControllerTest.fixture()))
                 .andExpect(status().is(413))
                 .andExpect(jsonPath("$.title").value("Too many records"))
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("at most 2 records")));
+                .andExpect(jsonPath("$.detail").value(Matchers.containsString("application/x-ndjson")));
     }
 
     @Test
