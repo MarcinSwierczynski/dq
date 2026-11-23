@@ -97,6 +97,9 @@ public final class RunExecution {
         long batchNumber = 0;
         boolean exhausted = false;
         while (!exhausted) {
+            if (Thread.currentThread().isInterrupted()) {
+                return RunStatus.CANCELLED; // before pulling: do not consume records that will not run
+            }
             List<SourceElement> batch = new ArrayList<>(Math.min(batchSize, 4096));
             RuntimeException sourceFailure = null;
             while (batch.size() < batchSize) {
@@ -115,6 +118,9 @@ public final class RunExecution {
             }
             // Records buffered before a source failure are still evaluated and delivered.
             for (SourceElement element : batch) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return RunStatus.CANCELLED;
+                }
                 evaluate(element, recordsRead);
                 recordsRead++;
             }
@@ -168,6 +174,10 @@ public final class RunExecution {
             emit(ruleException(rule, recordId, index, e, reader));
             return;
         } catch (Exception | LinkageError e) {
+            if (e instanceof InterruptedException) {
+                // Keep the cancellation request visible to the loop's between-record check.
+                Thread.currentThread().interrupt();
+            }
             emit(ruleException(rule, recordId, index, e, reader));
             return;
         }
@@ -215,7 +225,6 @@ public final class RunExecution {
                 cause == null ? null : cause.getClass().getName(), reader.fieldsRead(), cause);
     }
 
-    /** An outcome is counted only after the listener call returned normally. */
     private void emit(Result result) {
         deliver(() -> listener.onResult(result));
         resultCount++;

@@ -34,10 +34,11 @@ public final class DqEngine {
     }
 
     /**
-     * Evaluates every selected rule on every record of {@code source}, batch by batch, delivering each
-     * outcome to {@code listener} as soon as it is produced, and closes the source.
+     * Evaluates every selected rule on every record of {@code source}, delivering each outcome to
+     * {@code listener} as soon as it is produced, and closes the source.
      *
-     * @return the summary, with status {@link RunStatus#COMPLETED}
+     * @return the summary, with status {@link RunStatus#COMPLETED}, or {@link RunStatus#CANCELLED} when
+     *     the calling thread was interrupted (its interrupt flag stays set)
      * @throws ValidationRunException if the listener or the source fails; carries the partial summary
      */
     public RunSummary validate(RecordSource source, ValidationListener listener, RunOptions options) {
