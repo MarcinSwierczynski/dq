@@ -1,0 +1,29 @@
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_d5d1a93df045d4::t_29a6c3b965c16b 37
+dq-engine/src/main/java/dq/engine/api/RuleFilter.java
+  s_d5d1a93df045d4::t_27ffc3a21b8201 1-66
+dq-engine/src/main/java/dq/engine/api/RunOptions.java
+  s_d5d1a93df045d4::t_a775576e265dbe 3-4,10,12,20,24,33,42-46,48
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_d5d1a93df045d4::t_f63cba7436a97b 69-72
+dq-engine/src/test/java/dq/engine/BatchingTest.java
+  s_d5d1a93df045d4::t_4d8754858f32d3 83
+dq-engine/src/test/java/dq/engine/RuleFilterTest.java
+  s_d5d1a93df045d4::t_7517a995655121 1-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5d0ec34397dc417820450233171d5110b153c49",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
