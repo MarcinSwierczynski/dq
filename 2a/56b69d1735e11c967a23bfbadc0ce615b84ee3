@@ -1,0 +1,23 @@
+docs/specs/2026-11-20-dq-rule-engine.md
+  s_d5d1a93df045d4::t_bf549d96b7b4ca 311-318
+docs/specs/capabilities/dq-rule-evaluation.md
+  s_d5d1a93df045d4::t_2000674a7084eb 1-72
+docs/specs/capabilities/dq-rule-selection.md
+  s_d5d1a93df045d4::t_2a7da3dcd9802c 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a56b69d1735e11c967a23bfbadc0ce615b84ee3",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
