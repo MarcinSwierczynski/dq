@@ -1,0 +1,45 @@
+dq-engine/src/main/java/dq/engine/api/Severity.java
+  s_cc5f98e1b715d0::t_8f14f198943621 3
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-2,4-8
+dq-engine/src/main/java/dq/engine/api/DecisionMapping.java
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-2,4-30,32-87
+  s_1850d04bb52991::t_25a38fdd43dff3 3,31
+dq-engine/src/main/java/dq/engine/api/Decision.java
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-9
+dq-engine/src/test/java/dq/engine/DecisionMappingTest.java
+  s_1850d04bb52991::t_87b2a85a1d7046 1-76
+dq-engine/src/test/java/dq/engine/CountryScopeTest.java
+  s_1850d04bb52991::t_87b2a85a1d7046 1-32
+dq-engine/src/main/java/dq/engine/api/CountryScope.java
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-69
+dq-engine/src/main/java/dq/engine/api/RuleStatus.java
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-8
+dq-engine/src/main/java/module-info.java
+  s_1850d04bb52991::t_8b141d558ea59c 1-7
+dq-engine/src/main/java/dq/engine/api/InvalidCatalogException.java
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aa59060dd5097f15806a8f8a5fd2eb6a51691329",
+  "prompts": {},
+  "sessions": {
+    "s_1850d04bb52991": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4966d2f6-6bbf-4370-af38-a25b223dcc2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    },
+    "s_cc5f98e1b715d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c989da1c-765c-40b5-ab3c-b6e88815115d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
