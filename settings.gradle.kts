@@ -5,4 +5,4 @@ dependencyResolutionManagement {
     repositories { mavenCentral() }
 }
 
-include("dq-engine")
+include("dq-engine", "dq-http-example")
