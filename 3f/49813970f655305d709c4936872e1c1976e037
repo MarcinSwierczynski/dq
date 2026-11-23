@@ -1,0 +1,45 @@
+dq-engine/src/main/java/dq/engine/api/CollectingListener.java
+  s_d5d1a93df045d4::t_d6e186fcb5f99a 1-35
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_d5d1a93df045d4::t_5610b3b8c610aa 1-98
+dq-engine/src/main/java/dq/engine/api/RecordSource.java
+  s_d5d1a93df045d4::t_33288e423e7920 1-21
+dq-engine/src/main/java/dq/engine/api/RecordSources.java
+  s_d5d1a93df045d4::t_5f35db66ac965f 1-18
+dq-engine/src/main/java/dq/engine/api/RuleCatalog.java
+  s_d5d1a93df045d4::t_58f1227c38a8cb 8-10
+dq-engine/src/main/java/dq/engine/api/RunStatus.java
+  s_d5d1a93df045d4::t_a3bdeb4b71a0d0 1-11
+dq-engine/src/main/java/dq/engine/api/RunSummary.java
+  s_d5d1a93df045d4::t_3d5842d865df28 1-46
+dq-engine/src/main/java/dq/engine/api/SourceElement.java
+  s_d5d1a93df045d4::t_5ce564e2b977de 1-30
+dq-engine/src/main/java/dq/engine/api/ValidationListener.java
+  s_d5d1a93df045d4::t_dd0a0074a4912b 1-13
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_d5d1a93df045d4::t_40f8e03a1e4c17 1-166
+dq-engine/src/test/java/dq/engine/FixtureScenarioTest.java
+  s_d5d1a93df045d4::t_15dbdec01bb1fb 1-87
+dq-engine/src/test/java/dq/engine/RuleCatalogTest.java
+  s_d5d1a93df045d4::t_8958bc6cfb6112 8,16,36-44
+dq-engine/src/test/java/dq/engine/ScopeAndSelectionTest.java
+  s_d5d1a93df045d4::t_57ee78666a39d4 1-120
+dq-engine/src/test/java/dq/engine/TestRules.java
+  s_d5d1a93df045d4::t_eeea5f13a7d80d 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f49813970f655305d709c4936872e1c1976e037",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
