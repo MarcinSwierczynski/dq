@@ -1,0 +1,16 @@
+README.md
+  h_cb85b5763038ef 1
+.gitignore
+  h_cb85b5763038ef 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ae45f61d963ee4b9b909788223d3e8d2916bb61",
+  "prompts": {},
+  "humans": {
+    "h_cb85b5763038ef": {
+      "author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
