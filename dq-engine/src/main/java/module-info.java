@@ -4,6 +4,7 @@
  */
 module dq.engine {
     requires tools.jackson.databind;
+    requires static lombok; // compile-time only
 
     exports dq.engine.api;
 }

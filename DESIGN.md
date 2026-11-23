@@ -51,7 +51,10 @@ Why this shape:
   (`RuleCatalogTest`).
 - **No hidden state.** There are no statics with behavior, no service loaders, and no framework.
   Logging goes through `System.Logger`. Jackson is an `implementation` dependency and never appears in
-  the API: records cross the boundary as `Map<String, ?>`.
+  the API: records cross the boundary as `Map<String, ?>`. Lombok is compile-time only (`requires
+  static lombok`; `@Accessors(fluent = true)` keeps record-style accessors): it generates the accessors,
+  `equals`/`hashCode`/`toString` and builders of `Provenance`, `RunOptions` and `CountingListener`, and
+  nothing from it ships at runtime. Javadoc is built from the delomboked sources.
 - **Deterministic order.** Results come in input order, and within a record in catalog order
   (`FixtureScenarioTest.emitsInInputOrderThenCatalogOrder`). Callbacks run on the calling thread, so
   listeners do not need to be thread-safe.

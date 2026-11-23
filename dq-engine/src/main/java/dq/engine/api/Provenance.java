@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.SequencedMap;
+import lombok.Value;
+import lombok.experimental.Accessors;
 
 /**
  * Why a {@link Result} has its decision. Immutable, with value semantics.
@@ -11,18 +13,27 @@ import java.util.SequencedMap;
  * <p>A final class rather than a record, so that later minor versions can add information (for example a
  * rule version) as new accessors and constructor overloads without breaking hosts.
  */
-public final class Provenance {
+@Value
+@Accessors(fluent = true) // record-style accessors: ruleId(), not getRuleId()
+public class Provenance {
 
     /** Value recorded in {@link #fieldsRead()} for a field that is not present in the record. */
     public static final String ABSENT = "<absent>";
 
-    private final String ruleId;
-    private final String ruleLabel;
-    private final String recordId;
-    private final long recordIndex;
-    private final SequencedMap<String, Object> fieldsRead;
-    private final String computedValue;
-    private final Basis basis;
+    /** The rule that produced the result. */
+    String ruleId;
+    /** The rule's label at evaluation time. */
+    String ruleLabel;
+    /** The record's id, or {@code #<index>} when the record has none. */
+    String recordId;
+    /** 0-based position of the record in the input. */
+    long recordIndex;
+    /** Every field the rule read, in read order, with the value found or {@link #ABSENT}; unmodifiable. */
+    SequencedMap<String, Object> fieldsRead;
+    /** The value the rule logic returned; {@code null} for {@link Basis#OUT_OF_SCOPE}. */
+    String computedValue;
+    /** How the decision was reached. */
+    Basis basis;
 
     /**
      * Normally created by the engine; public for host test doubles.
@@ -45,65 +56,6 @@ public final class Provenance {
                 new LinkedHashMap<>(Objects.requireNonNull(fieldsRead, "fieldsRead")));
         this.computedValue = computedValue;
         this.basis = Objects.requireNonNull(basis, "basis");
-    }
-
-    /** The rule that produced the result. */
-    public String ruleId() {
-        return ruleId;
-    }
-
-    /** The rule's label at evaluation time. */
-    public String ruleLabel() {
-        return ruleLabel;
-    }
-
-    /** The record's id, or {@code #<index>} when the record has none. */
-    public String recordId() {
-        return recordId;
-    }
-
-    /** 0-based position of the record in the input. */
-    public long recordIndex() {
-        return recordIndex;
-    }
-
-    /** Every field the rule read, in read order, with the value found or {@link #ABSENT}; unmodifiable. */
-    public SequencedMap<String, Object> fieldsRead() {
-        return fieldsRead;
-    }
-
-    /** The value the rule logic returned; {@code null} for {@link Basis#OUT_OF_SCOPE}. */
-    public String computedValue() {
-        return computedValue;
-    }
-
-    /** How the decision was reached. */
-    public Basis basis() {
-        return basis;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof Provenance p
-                && recordIndex == p.recordIndex
-                && ruleId.equals(p.ruleId)
-                && ruleLabel.equals(p.ruleLabel)
-                && recordId.equals(p.recordId)
-                && fieldsRead.equals(p.fieldsRead)
-                && Objects.equals(computedValue, p.computedValue)
-                && basis == p.basis;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(ruleId, ruleLabel, recordId, recordIndex, fieldsRead, computedValue, basis);
-    }
-
-    @Override
-    public String toString() {
-        return "Provenance[ruleId=" + ruleId + ", ruleLabel=" + ruleLabel + ", recordId=" + recordId
-                + ", recordIndex=" + recordIndex + ", fieldsRead=" + fieldsRead + ", computedValue="
-                + computedValue + ", basis=" + basis + "]";
     }
 
     /** How the decision was reached. */
