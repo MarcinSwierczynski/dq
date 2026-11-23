@@ -1,0 +1,35 @@
+dq-engine/src/main/java/dq/engine/api/Severity.java
+  s_d5d1a93df045d4::t_4a7219db45d949 1-8
+dq-engine/src/test/java/dq/engine/CountryScopeTest.java
+  s_d5d1a93df045d4::t_717387af4d739b 4,6,9,12-30
+dq-engine/src/test/java/dq/engine/DecisionMappingTest.java
+  s_d5d1a93df045d4::t_771b48bcbce3e8 1-76
+dq-engine/src/main/java/dq/engine/api/CountryScope.java
+  s_d5d1a93df045d4::t_8fc592b015bb1d 1-69
+dq-engine/src/main/java/dq/engine/api/Decision.java
+  s_d5d1a93df045d4::t_4f2c4a4476de50 1-9
+dq-engine/src/main/java/dq/engine/api/DecisionMapping.java
+  s_d5d1a93df045d4::t_4a67eb589a2776 1-87
+dq-engine/src/main/java/dq/engine/api/InvalidCatalogException.java
+  s_d5d1a93df045d4::t_70901411b12132 1-13
+dq-engine/src/main/java/dq/engine/api/RuleStatus.java
+  s_d5d1a93df045d4::t_819868b8a19488 1-8
+dq-engine/src/main/java/module-info.java
+  s_d5d1a93df045d4::t_8e149672f7277a 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "731936f31edaff598cfd00bd0ceaf72f92be1886",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
