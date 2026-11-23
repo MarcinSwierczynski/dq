@@ -1,20 +1,27 @@
 package dq.http;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -22,6 +29,9 @@ class ValidationControllerTest {
 
     @Autowired
     MockMvc mvc;
+
+    @Autowired
+    JsonMapper json;
 
     static String fixture() throws IOException {
         try (InputStream in = ValidationControllerTest.class.getResourceAsStream("/fixture.json")) {
@@ -85,5 +95,78 @@ class ValidationControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Invalid JSON input"))
                 .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void invalidRunOptionsAre400() throws Exception {
+        mvc.perform(post("/validations?batchSize=0").contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("batchSize")));
+        mvc.perform(post("/validations?status=NOPE").contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void categoryFilterLowersRulesSelected() throws Exception {
+        mvc.perform(post("/validations?category=tax").contentType(MediaType.APPLICATION_JSON).content(fixture()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.rulesSelected").value(1))
+                .andExpect(jsonPath("$.results", hasSize(3)));
+        mvc.perform(post("/validations?category=tax&category=banking&country=DE")
+                        .contentType(MediaType.APPLICATION_JSON).content(fixture()))
+                .andExpect(jsonPath("$.summary.rulesSelected").value(2));
+        mvc.perform(post("/validations?status=DRAFT").contentType(MediaType.APPLICATION_JSON).content(fixture()))
+                .andExpect(jsonPath("$.summary.rulesSelected").value(0))
+                .andExpect(jsonPath("$.summary.status").value("COMPLETED"));
+    }
+
+    private List<JsonNode> ndjson(String path, String body) throws Exception {
+        MvcResult started = mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+                        .accept(ValidationController.NDJSON).content(body))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        String text = mvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(ValidationController.NDJSON))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return text.lines().map(json::readTree).toList();
+    }
+
+    @Test
+    void streamsOneLinePerOutcomeThenTheSummary() throws Exception {
+        List<JsonNode> lines = ndjson("/validations", faultDemo());
+
+        assertThat(lines).hasSize(11 + 2 + 1);
+        assertThat(lines.getFirst().get("type").asString()).isEqualTo("result");
+        assertThat(lines.getFirst().get("ruleId").asString()).isEqualTo("countryBlocked");
+        assertThat(lines.getFirst().get("recordId").asString()).isEqualTo("r1");
+        assertThat(lines).extracting(l -> l.get("type").asString())
+                .containsSubsequence("result", "error", "error", "summary")
+                .filteredOn("error"::equals).hasSize(2);
+        JsonNode last = lines.getLast();
+        assertThat(last.get("type").asString()).isEqualTo("summary");
+        assertThat(last.get("resultCount").asInt()).isEqualTo(11);
+        assertThat(last.get("errorCount").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void streamingHonoursFiltersAndBatchSize() throws Exception {
+        List<JsonNode> lines = ndjson("/validations?category=tax&batchSize=1", fixture());
+
+        assertThat(lines).hasSize(3 + 1);
+        assertThat(lines.getLast().get("rulesSelected").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void truncatedStreamingInputEndsWithAnAbortedLine() throws Exception {
+        String truncated = "[{\"id\":\"r1\",\"country\":\"DE\",\"vatId\":\"DE111111111\",\"iban\":\"DE1\"}, {\"id\":";
+        List<JsonNode> lines = ndjson("/validations", truncated);
+
+        assertThat(lines).hasSize(3 + 1);
+        JsonNode last = lines.getLast();
+        assertThat(last.get("type").asString()).isEqualTo("aborted");
+        assertThat(last.get("reason").asString()).contains("malformed JSON");
+        assertThat(last.get("summary").get("status").asString()).isEqualTo("ABORTED");
+        assertThat(last.get("summary").get("resultCount").asInt()).isEqualTo(3);
     }
 }
