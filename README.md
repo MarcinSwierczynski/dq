@@ -9,8 +9,9 @@ Spec: [`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-
 Requires a JDK 25 (Gradle toolchains pick it up); the wrapper downloads Gradle.
 
 ```sh
-./gradlew build                      # compile, unit tests, javadoc, boot jar
+./gradlew build                      # compile, unit tests, scale test, javadoc, boot jar
 ./gradlew :dq-engine:test            # library unit tests only
+./gradlew :dq-engine:scaleTest       # 1,000,000 streamed records under -Xmx64m
 ./gradlew :dq-http-example:test      # HTTP tests (MockMvc)
 ```
 
@@ -22,8 +23,12 @@ DqEngine engine = DqEngine.builder()
         .build();
 
 RunSummary summary = engine.validate(
-        RecordSources.jsonArray(inputStream),      // the source closes the stream
-        listener);                                 // your ValidationListener: onResult / onError
+        RecordSources.jsonArray(inputStream),      // streamed; the source closes the stream
+        listener,                                  // your ValidationListener: onResult / onError / onBatchComplete
+        RunOptions.builder()
+                .batchSize(5_000)
+                .filter(RuleFilter.category("tax").and(RuleFilter.countryScope("DE")))
+                .build());
 ```
 
 A rule is logic that computes a value plus a decision mapping held as data:
@@ -63,5 +68,19 @@ curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' -
   42]'
 ```
 
+Streaming (no record limit, one JSON line per outcome, then a `summary` line), with rule selection:
+
+```sh
+curl -s -N -X POST 'localhost:8080/validations?category=tax&country=DE&batchSize=500' \
+  -H 'Content-Type: application/json' -H 'Accept: application/x-ndjson' \
+  --data-binary @dq-engine/src/test/resources/dq/engine/fixture.json
+```
+
+| Parameter | Meaning |
+|---|---|
+| `status`, `country`, `category` | Repeatable. Values of one parameter are ORed; different parameters are ANDed. RELEASED is always enforced. |
+| `batchSize` | Records per batch (≥ 1, default 1000). |
+
 The buffered JSON response accepts at most `dq.http.max-records` (default 10,000) records and returns
-`413` beyond that. Malformed JSON returns a `400` problem detail.
+`413` beyond that. Malformed JSON returns a `400` problem detail. On the streaming endpoint the status
+is already sent, so a failure mid-stream ends with an `{"type":"aborted",…}` line.
