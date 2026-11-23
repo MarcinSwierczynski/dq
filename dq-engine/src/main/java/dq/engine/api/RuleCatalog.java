@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Supplies the rules an engine evaluates. Hosts may implement it over a database or a catalog service.
+ * Supplies the rules an engine evaluates. Hosts may implement it over a database or a catalog service;
+ * {@link DqEngine.Builder#build()} reads it once and validates the result, so the engine never sees a
+ * catalog change mid-run.
  */
 @FunctionalInterface
 public interface RuleCatalog {
