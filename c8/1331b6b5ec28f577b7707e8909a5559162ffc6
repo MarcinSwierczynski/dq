@@ -1,0 +1,12 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c81331b6b5ec28f577b7707e8909a5559162ffc6",
+  "prompts": {},
+  "humans": {
+    "h_cb85b5763038ef": {
+      "author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
