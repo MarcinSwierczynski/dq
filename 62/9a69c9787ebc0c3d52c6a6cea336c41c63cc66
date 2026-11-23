@@ -1,0 +1,22 @@
+DESIGN.md
+  s_cd8df262dd665f::t_d75f413cb1f604 236
+  s_cd8df262dd665f::t_01e285a9d58435 257
+  s_cd8df262dd665f::t_35f18eb2cfa5cf 259-319
+  s_cd8df262dd665f::t_a6da7a1044fd0e 258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "629a69c9787ebc0c3d52c6a6cea336c41c63cc66",
+  "prompts": {},
+  "sessions": {
+    "s_cd8df262dd665f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e399e532-dc62-4d7d-a47b-2cc3e0cbe613",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
