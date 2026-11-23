@@ -1,0 +1,39 @@
+dq-engine/build.gradle.kts
+  s_d5d1a93df045d4::t_9836913879d1bc 13-15
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_d5d1a93df045d4::t_f81f1760192cc6 13,36
+dq-engine/src/main/java/dq/engine/api/RecordSource.java
+  s_d5d1a93df045d4::t_2c410c787fb3d9 9
+dq-engine/src/main/java/dq/engine/api/RecordSourceException.java
+  s_d5d1a93df045d4::t_eed08906abbf0b 1-14
+dq-engine/src/main/java/dq/engine/api/RecordSources.java
+  s_d5d1a93df045d4::t_6ba88de8b63d28 3-4,20-29
+dq-engine/src/main/java/dq/engine/internal/JsonArrayRecordSource.java
+  s_d5d1a93df045d4::t_f3cd11ae371fe2 1-90
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_d5d1a93df045d4::t_8d4112ffe4359d 84-93
+dq-engine/src/main/java/module-info.java
+  s_d5d1a93df045d4::t_eac5de05ae9eb3 6-7
+dq-engine/src/test/java/dq/engine/JsonArraySourceTest.java
+  s_d5d1a93df045d4::t_9b468280ad6080 1-226
+dq-engine/src/test/resources/dq/engine/fixture.json
+  s_d5d1a93df045d4::t_c48981543ada6f 1-22
+gradle/libs.versions.toml
+  s_d5d1a93df045d4::t_ee645a55d2b067 2,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a2b25f274bb20fb71ddc171d5cb9d6b310ef7b1",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
