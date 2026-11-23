@@ -1,5 +1,6 @@
 package dq.engine;
 
+import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -42,7 +43,7 @@ class JsonArraySourceTest {
         var listener = new CollectingListener();
         try (InputStream in = getClass().getResourceAsStream("fixture.json")) {
             RunSummary summary = engine.validate(RecordSources.jsonArray(in), listener);
-            assertThat(summary.resultCount()).isEqualTo(9);
+            assertThat(resultCount(summary)).isEqualTo(9);
         }
         assertThat(byCell(listener)).hasSize(9);
         Fixture.EXPECTED.forEach((cell, decision) ->
@@ -61,7 +62,7 @@ class JsonArraySourceTest {
         RunSummary summary = engine.validate(RecordSources.jsonArray(json(withNumber)), listener);
 
         assertThat(summary.recordsRead()).isEqualTo(4);
-        assertThat(summary.resultCount()).isEqualTo(9);
+        assertThat(resultCount(summary)).isEqualTo(9);
         assertThat(summary.errorCount()).isEqualTo(1);
         EvaluationError error = listener.errors().getFirst();
         assertThat(error.kind()).isEqualTo(ErrorKind.UNREADABLE_RECORD);
@@ -95,7 +96,7 @@ class JsonArraySourceTest {
                     assertThat(e.getCause()).isInstanceOf(RecordSourceException.class);
                     assertThat(e.partialSummary().status()).isEqualTo(RunStatus.ABORTED);
                     assertThat(e.partialSummary().recordsRead()).isEqualTo(1);
-                    assertThat(e.partialSummary().resultCount()).isEqualTo(3);
+                    assertThat(resultCount(e.partialSummary())).isEqualTo(3);
                 });
         assertThat(listener.results()).hasSize(3);
     }
@@ -221,7 +222,7 @@ class JsonArraySourceTest {
         RunSummary summary = engine.validate(source, new CollectingListener());
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
-        assertThat(summary.resultCount()).isEqualTo(9);
+        assertThat(resultCount(summary)).isEqualTo(9);
     }
 
     private static final class TrackingStream extends ByteArrayInputStream {

@@ -1,5 +1,6 @@
 package dq.engine;
 
+import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dq.engine.catalog.Decision;
@@ -88,7 +89,7 @@ class FixtureScenarioTest {
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
         assertThat(summary.recordsRead()).isEqualTo(3);
         assertThat(summary.rulesSelected()).isEqualTo(3);
-        assertThat(summary.resultCount()).isEqualTo(9);
+        assertThat(resultCount(summary)).isEqualTo(9);
         assertThat(summary.errorCount()).isZero();
         assertThat(summary.byDecision()).containsExactly(
                 Map.entry(Decision.VALID, 3L), Map.entry(Decision.INVALID, 4L),

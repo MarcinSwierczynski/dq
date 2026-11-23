@@ -1,5 +1,6 @@
 package dq.engine;
 
+import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dq.engine.fixtures.Fixture;
@@ -35,11 +36,11 @@ class ScaleTest {
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
         assertThat(summary.recordsRead()).isEqualTo(RECORDS);
-        assertThat(summary.resultCount() + summary.errorCount()).isEqualTo(3L * RECORDS);
+        assertThat(resultCount(summary) + summary.errorCount()).isEqualTo(3L * RECORDS);
         assertThat(listener.results() + listener.errors()).isEqualTo(3L * RECORDS);
         assertThat(listener.batches()).isEqualTo(RECORDS / 1000);
         System.out.printf(java.util.Locale.ROOT, "scale: %,d records, %,d outcomes in %d ms (%,.0f records/s), max heap %d MB%n",
-                summary.recordsRead(), summary.resultCount() + summary.errorCount(), summary.duration().toMillis(),
+                summary.recordsRead(), resultCount(summary) + summary.errorCount(), summary.duration().toMillis(),
                 summary.recordsRead() / Math.max(0.001, summary.duration().toNanos() / 1e9), maxHeap >> 20);
     }
 

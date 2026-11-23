@@ -184,8 +184,8 @@ worker. Whatever the filter selects, the engine **always** intersects it with `s
   decision, `provenance` (the rule's explanation, such as `len 4 instead of 9`, or its label when it
   gives none; the engine's fields read, computed value and basis are not sent) and, for `INVALID` and `REVIEW` only, the rule's severity: a passing or not-applicable check
   is not a finding. The summary's `bySeverity` counts the same findings, by rule severity
-  (`RunSummary`): for the fixture `ERROR=3, WARNING=1`. The reply's summary leaves out
-  `resultCount`, which is the sum of `byDecision`; the library's `RunSummary` keeps it. `errors` holds that record's rule errors, or the one
+  (`RunSummary`): for the fixture `ERROR=3, WARNING=1`. Neither the reply's summary nor
+  `RunSummary` has a result count: it is the sum of `byDecision`. `errors` holds that record's rule errors, or the one
   `UNREADABLE_RECORD` error of a non-object element. The engine stays per-outcome; the host's
   `RecordGrouping` listener builds the groups. Outcomes arrive in input order and a record never
   spans batches, so it holds only the current record. Records are grouped by the engine's record

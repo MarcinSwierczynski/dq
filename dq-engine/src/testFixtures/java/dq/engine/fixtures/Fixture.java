@@ -9,6 +9,7 @@ import dq.engine.catalog.Rule;
 import dq.engine.catalog.RuleCatalog;
 import dq.engine.catalog.RuleStatus;
 import dq.engine.catalog.Severity;
+import dq.engine.run.RunSummary;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,5 +78,10 @@ public final class Fixture {
             map.put((String) keyValues[i], keyValues[i + 1]);
         }
         return map;
+    }
+
+    /** Results a run delivered: the sum of {@link RunSummary#byDecision()}. */
+    public static long resultCount(RunSummary summary) {
+        return summary.byDecision().values().stream().mapToLong(Long::longValue).sum();
     }
 }

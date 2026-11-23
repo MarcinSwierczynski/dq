@@ -41,7 +41,6 @@ final class RunExecution {
     private final EnumMap<Severity, Long> bySeverity = new EnumMap<>(Severity.class);
     private List<Rule> selected = List.of();
     private long recordsRead;
-    private long resultCount;
     private long errorCount;
 
     RunExecution(List<Rule> rules, String recordIdField, String countryField, RecordSource source,
@@ -245,7 +244,6 @@ final class RunExecution {
 
     private void emit(Result result) {
         deliver(() -> listener.onResult(result));
-        resultCount++;
         byDecision.merge(result.decision(), 1L, Long::sum);
         if (isFinding(result.decision())) {
             bySeverity.merge(result.severity(), 1L, Long::sum);
@@ -270,7 +268,7 @@ final class RunExecution {
     }
 
     private RunSummary summary(RunStatus status) {
-        return new RunSummary(recordsRead, selected.size(), resultCount, errorCount, byDecision, bySeverity,
+        return new RunSummary(recordsRead, selected.size(), errorCount, byDecision, bySeverity,
                 Duration.ofNanos(System.nanoTime() - startNanos), status);
     }
 
