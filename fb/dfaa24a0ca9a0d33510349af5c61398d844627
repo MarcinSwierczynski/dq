@@ -1,0 +1,25 @@
+dq-http-example/src/test/java/dq/http/ValidationControllerTest.java
+  s_44978d961c7434::t_8b6d4c0fb720e9 117
+  s_44978d961c7434::t_3f91687643cf94 54,56,69,74-78,106,115,124-125,173,179-182,215,230-231,242,250
+README.md
+  s_44978d961c7434::t_6c1c90dad21256 54-56,59-63,70,83-104
+  s_44978d961c7434::t_b9db9f4d7c24f4 105
+dq-http-example/src/main/java/dq/http/ExampleCatalog.java
+  s_44978d961c7434::t_3f91687643cf94 7,18-19,53-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbdfaa24a0ca9a0d33510349af5c61398d844627",
+  "prompts": {},
+  "sessions": {
+    "s_44978d961c7434": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ddc335ad-f075-456c-8979-cd10fb2cd80c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
