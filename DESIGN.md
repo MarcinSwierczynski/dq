@@ -18,13 +18,13 @@ The exported package is `dq.engine.api`, and `module-info.java` exports only tha
 
 | Type | Role |
 |---|---|
-| `DqEngine` (+ `Builder`) | Entry point. It is immutable and thread-safe; `validate(source, listener) → RunSummary`. |
+| `DqEngine` (+ `Builder`) | Entry point. It is immutable and thread-safe; `validate(source, listener[, options]) → RunSummary`. |
 | `Rule`, `RuleLogic`, `DecisionMapping`, `CountryScope` | A rule definition. Logic returns a `String` value, and the mapping (data) turns that value into a `Decision`. |
 | `FieldReader` | The only view of a record that logic gets. It records each field it reads, for provenance. |
 | `Result`, `Provenance`, `EvaluationError`, `ErrorKind` | Outcomes. |
-| `RunSummary`, `RunStatus` | Totals. |
-| `RuleCatalog`, `RecordSource`/`SourceElement`, `ValidationListener` | The seams (see §4). |
-| `RecordSources`, `CollectingListener` | Built-in implementations. |
+| `RunSummary`, `RunStatus`, `BatchProgress` | Totals and progress. |
+| `RuleCatalog`, `RecordSource`/`SourceElement`, `ValidationListener`, `RuleFilter` | The four seams (see §4). |
+| `RecordSources`, `CollectingListener`, `CountingListener` | Built-in implementations. |
 | `InvalidCatalogException`, `ValidationRunException`, `RecordSourceException` | Failures, split by who owns them. |
 
 Why this shape:
@@ -40,7 +40,9 @@ Why this shape:
   `Provenance.basis` records whether the decision came from `MAPPED`, `DEFAULT`, or `OUT_OF_SCOPE`.
 - **Immutable records and sealed types.** `DecisionMapping.Resolution`, `CountryScope`, and
   `SourceElement` are sealed, so the engine uses exhaustive switches. `Rule`, `DecisionMapping`,
-  `RunSummary`, and `Provenance` copy their collections defensively.
+  `RunSummary`, and `Provenance` copy their collections defensively. The copies are shallow: a nested
+  list or map read with `FieldReader.raw` is shared with the record, so logic and listeners must treat
+  it as read-only.
 - **Configuration errors fail fast; data errors are isolated.** An invalid catalog throws
   `InvalidCatalogException` from `Rule.builder().build()`, `DecisionMapping.build()`,
   `RuleCatalog.of`, or `DqEngine.Builder.build()`. This happens before any record runs. Invalid means
@@ -95,8 +97,12 @@ does the same end to end (`ValidationControllerTest.faultDemoReportsErrorsAndSti
 broken stream or malformed JSON). The engine then throws `ValidationRunException`, which carries a
 partial `RunSummary` with status `ABORTED`. Outcomes already delivered stay delivered, and an outcome
 is counted only after its listener call returns. If the listener failed silently and we continued,
-the promise that the caller receives every outcome would be broken. A failing `RecordSource.close()` is logged and does not discard the
-summary.
+the promise that the caller receives every outcome would be broken. Records buffered before a source
+failure are still evaluated. A failing `RecordSource.close()` is logged and does not discard the
+summary. An exception from a host `RuleFilter` is a programming error: it is thrown from `validate`
+unchanged, before any record is read, and the source is still closed. An I/O failure on the input is
+reported as `could not read input`, separately from malformed JSON
+(`JsonArraySourceTest.anIoFailureIsReportedAsUnreadableInputNotAsMalformedJson`).
 
 **Missing versus failing.** r3 has no `vatId` and is expected to be `INVALID`, not an error. So an
 *absent* field is normal input, handled through `Optional` (`fields.text`). A rule makes absence an
@@ -105,9 +111,27 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 
 ## 3. Bounded memory (F5)
 
-Phase 2. The listener-based API already delivers each outcome as soon as it exists, so streaming
-input and batches can be added without changing it. In Phase 1, `RecordSources.jsonArray` still reads
-the whole array before the first record is evaluated.
+- `RecordSources.jsonArray` streams the input through Jackson's `JsonParser`. It holds **one** element
+  at a time (`JsonArrayRecordSource`), and parsing begins inside `validate`, not when the source is
+  created.
+- The engine pulls at most `batchSize` elements into a buffer and evaluates them. It pushes each
+  outcome straight to the listener, calls `onBatchComplete(BatchProgress)`, and drops the buffer
+  (`RunExecution.loop`). Live heap is O(`batchSize` records + one evaluation's outcome), whatever the
+  input size. Counters are plain `long`s.
+- Results refer to rules and records **by id**, never by object, so a listener that keeps results does
+  not keep records alive.
+- The bound assumes records of bounded size: one element is materialised whole. Jackson's default
+  `StreamReadConstraints` limit string length and nesting depth, but not the size of an object, so a
+  host that accepts untrusted input should also cap the request or message size.
+- **Proof** (`ScaleTest`, run by `scaleTest` with `maxHeapSize = "64m"`; `check` depends on it): 1,000,000
+  generated records are streamed through the real `jsonArray` path against the 3 fixture rules. The
+  run produces 3,000,000 outcomes, and on a laptop it takes about 0.7 s (~1.4M records/s). As a control,
+  the same test with a `CollectingListener` fails under that cap with `OutOfMemoryError: Java heap
+  space`, so the cap really separates streaming from accumulation.
+- The batch is the host's commit point (flush a DB batch, commit an offset). It is also the unit a
+  future parallel executor would split on. `BatchingTest` checks the 1000/1000/500 split.
+- Cancellation: the engine checks the thread's interrupt flag between records, returns `CANCELLED`
+  with the counts so far, and leaves the flag set (`BatchingTest.interruptStopsTheRunBetweenRecordsAsCancelled`).
 
 ## 4. Seams for host-supplied inputs
 
@@ -115,20 +139,35 @@ the whole array before the first record is evaluated.
 |---|---|---|
 | `RuleCatalog` (`List<Rule> rules()`) | `RuleCatalog.of(…)` | DB-backed or versioned catalog service. It is read once at `build()`, so a run never sees a catalog change mid-way. Rebuild the engine (cheap) to pick up a new version. |
 | `RecordSource` (`SourceElement next()`, `close()`) | `RecordSources.of(List<Map>)`, `RecordSources.jsonArray(InputStream)` | Kafka consumer, JDBC cursor, S3 object. A non-record is reported with `SourceElement.unreadable(reason)`, and the run continues. Throwing means the stream is broken, and the run aborts. |
-| `ValidationListener` | `CollectingListener` | DB batch writer, NDJSON writer, metrics bridge |
+| `ValidationListener` | `CollectingListener`, `CountingListener` | DB batch writer, NDJSON writer (`dq-http-example/NdjsonListener`), metrics bridge |
+| `RuleFilter` | `all`, `status`, `countryScope`, `category`, `and`/`or`/`not` | Tenant- or job-specific selection (any lambda) |
 | Field names | `recordIdField` (default `id`), `countryField` (default `country`) | Other record schemas |
 
-**Country scope.** Every rule is checked against each record's own country. A rule scoped to `DE`
-on a `FR` record yields `NOT_APPLICABLE` with basis `OUT_OF_SCOPE`, and the logic is not called
-(`ScopeAndSelectionTest`). Its provenance shows the country value it compared. Only `RELEASED` rules
-run. Run-level selection (`RuleFilter`) is Phase 2.
+**Country scope, twice (F6).** (1) Every rule is checked against each record's own country. A rule
+scoped to `DE` on a `FR` record yields `NOT_APPLICABLE` with basis `OUT_OF_SCOPE`, and the logic is
+not called (`ScopeAndSelectionTest`). Its provenance shows the country value it compared. (2) At run
+level, `RuleFilter.countryScope("DE")` keeps WORLD and DE rules, for example for a per-country
+worker. Whatever the filter selects, the engine **always** intersects it with `status == RELEASED`
+(`RuleFilterTest`). A filter that selects nothing is a normal, completed run with `rulesSelected = 0`.
 
 ## 5. Example host (`dq-http-example`)
 
-`POST /validations` (`ValidationController`) returns `{summary, results, errors}`. Results are
-buffered, so the request is capped at `dq.http.max-records` with a `RecordLimit` source decorator,
-giving `413`. Malformed JSON gives a `400` problem detail. `ErrorView` drops the `Throwable` so stack
-traces never reach clients. Streaming (NDJSON) and rule selection are Phase 2.
+`POST /validations` (`ValidationController`):
+
+- **JSON (`Accept: application/json`):** returns `{summary, results, errors}`. Results are buffered,
+  so the request is capped at `dq.http.max-records` with a `RecordLimit` source decorator, giving
+  `413` and a hint to use NDJSON. The cap is enforced while streaming the input, so the body is never
+  fully buffered first. Malformed JSON gives a `400` problem detail.
+- **NDJSON (`Accept: application/x-ndjson`):** a `StreamingResponseBody`. It writes one line per
+  outcome, flushes after each batch, and ends with a `summary` line. If the run aborts after the 200
+  is on the wire, the last line is `{"type":"aborted",…}`. A real-server check streamed 50,000 records
+  (150,000 outcomes) in about 0.7 s.
+- Query parameters `status`, `country`, `category`, and `batchSize` map onto `RuleFilter` and
+  `RunOptions`.
+- `ErrorView` drops the `Throwable` so stack traces never reach clients. Rule exception messages are
+  passed through as they are; a production host would map `RULE_EXCEPTION` to a generic message.
+- It is an example: it has no authentication and no request-size limit beyond the buffered
+  endpoint's record cap.
 
 **Sensitive data.** VAT ids and IBANs appear in `fieldsRead`. The library never logs field values:
 `System.Logger` gets only ids, the error kind, and the cause type. The host decides whether
@@ -145,25 +184,46 @@ provenance is stored or returned.
 - **A4:** a value with no case and no default is an `UNMAPPED_VALUE` error. The engine never picks a
   decision itself.
 - **A5:** catalog problems are configuration errors and fail at build time.
-- **A6:** only RELEASED rules run.
+- **A6:** RELEASED is always enforced on top of the caller's filter.
 - **A7:** country codes are two-letter ISO codes, compared case-insensitively.
 - JSON `null` counts as absent for `text`, `require`, and `has`, but provenance records it as
   `null`, so it can be told apart from `<absent>`.
 
 ## 7. Trade-offs under the time-box
 
-- **Sequential evaluation.** It keeps callbacks single-threaded and output deterministic. The run
+- **Sequential evaluation.** It keeps callbacks single-threaded and output deterministic. The batch
   loop is the place to parallelize later.
 - **No per-rule timeout.** A rule that loops forever stalls the run. Timeouts need a worker thread per
-  evaluation.
+  evaluation (see next steps).
 - **Logic is Java, definitions are data.** An expression language (CEL/JEXL) would make logic data
   too, but it brings a sandbox, a type system, and error reporting that did not fit. `RuleLogic` is
   the seam a `CelRuleLogic` would plug into.
 - **String values.** Mapping keys are simple and serializable. Numeric or enum values have to be
   converted to strings in the logic.
 - **One `NOT_APPLICABLE` result per (record × foreign-country rule).** This is explicit, but it
-  inflates output for heavily country-scoped catalogs.
+  inflates output for heavily country-scoped catalogs. The mitigation today is `RuleFilter.countryScope`.
 - **JSON syntax errors abort the run.** An array parser cannot resynchronize after one. NDJSON input
   could skip a bad line instead.
 - **Jackson inside the library.** It stays internal, but a host on a conflicting Jackson 3.x could
   still clash at runtime. Shading is the fix if that happens.
+- **Not built (it was optional):** `JsonRuleCatalog` + `LogicRegistry`, which would load rule
+  definitions from JSON and resolve logic by name.
+- **Deviations from the spec:** there is no public `DataRecord`; the engine reads the id and country
+  from the field map, and the field-access exception is internal (a smaller API). `RecordSource` is
+  `SourceElement next()`, where the sealed `SourceElement` is `Fields | Unreadable`, so a host source
+  can report a non-record without throwing.
+
+## 8. What I'd do next
+
+1. Parallel batches on virtual threads: evaluate a batch concurrently and deliver outcomes in order
+   through a reorder buffer, so the listener contract does not change.
+2. Per-rule timeouts and a circuit breaker that disables a rule after N consecutive failures in a run.
+3. `JsonRuleCatalog` + `LogicRegistry`, then CEL-backed logic so rules can be authored without a
+   deployment.
+4. NDJSON input with line-level recovery from malformed records.
+5. Rule version or hash in `Provenance` so stored results stay explainable after the catalog changes.
+6. A run option to suppress `OUT_OF_SCOPE` results, and a multi-country `CountryScope` variant.
+7. Metrics hooks (per-rule latency and error rate) through a listener decorator, and an
+   `onRunComplete` callback.
+8. Publish to Maven with `-sources`/`-javadoc` jars (already built) and add API-compatibility checks
+   (e.g. japicmp) to CI.
