@@ -4,6 +4,7 @@ import static dq.engine.catalog.Decision.INVALID;
 import static dq.engine.catalog.Decision.NOT_APPLICABLE;
 import static dq.engine.catalog.Decision.VALID;
 
+import dq.engine.catalog.CountryScope;
 import dq.engine.catalog.DecisionMapping;
 import dq.engine.catalog.Rule;
 import dq.engine.catalog.RuleCatalog;
@@ -14,7 +15,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The three §5 rules, wired into one engine bean. A real host would load definitions from its own
+ * The three §5 rules plus {@code deVatPrefix}, which is scoped to Germany so the example shows the
+ * per-record scope check ({@code NOT_APPLICABLE} / {@code OUT_OF_SCOPE} on non-DE records), wired into one engine bean. A real host would load definitions from its own
  * store by implementing {@link RuleCatalog}.
  */
 @Configuration(proxyBeanMethods = false)
@@ -48,7 +50,15 @@ class ExampleCatalog {
                                     : "iban does not start with " + country).orElse("no iban");
                         })
                         .mapping(DecisionMapping.builder().when("ok", VALID).when("bad", INVALID).build())
-                        .status(RuleStatus.RELEASED).severity(Severity.WARNING).category("banking").build());
+                        .status(RuleStatus.RELEASED).severity(Severity.WARNING).category("banking").build(),
+                Rule.builder().id("deVatPrefix").label("German VAT id starts with DE")
+                        .scope(CountryScope.country("DE"))
+                        .logic(f -> f.text("vatId").filter(v -> v.startsWith("DE")).map(v -> "ok").orElse("bad"))
+                        .explain(e -> e.text("vatId")
+                                .map(v -> v.startsWith("DE") ? "starts with DE" : "starts with " + v.substring(0, Math.min(2, v.length())) + " instead of DE")
+                                .orElse("no vatId"))
+                        .mapping(DecisionMapping.builder().when("ok", VALID).when("bad", INVALID).build())
+                        .status(RuleStatus.RELEASED).severity(Severity.ERROR).category("tax").build());
     }
 
     @Bean

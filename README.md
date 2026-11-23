@@ -51,21 +51,23 @@ Rule vatFormat = Rule.builder()
 ./gradlew :dq-http-example:bootRun          # listens on :8080
 ```
 
-The §5 fixture (9 results). The response has one entry per record, with results keyed by rule id:
+The example catalog is the three §5 rules plus `deVatPrefix`, a tax rule scoped to `DE`.
+
+The §5 fixture (12 results). The response has one entry per record, with results keyed by rule id:
 `records[1].results.vatFormat` is `{"decision": "INVALID", "severity": "ERROR", "provenance": "len 4 instead of 9"}`:
 
-| record | countryBlocked | vatFormat | ibanFormat |
-|---|---|---|---|
-| r1 | NOT_APPLICABLE (country DE is not blocked) | VALID (len 11) | VALID (iban starts with DE) |
-| r2 | NOT_APPLICABLE (country FR is not blocked) | INVALID (len 4 instead of 9) | VALID (iban starts with FR) |
-| r3 | INVALID (country ZZ is blocked) | INVALID (no vatId) | INVALID (empty iban) |
+| record | countryBlocked | vatFormat | ibanFormat | deVatPrefix |
+|---|---|---|---|---|
+| r1 | NOT_APPLICABLE (country DE is not blocked) | VALID (len 11) | VALID (iban starts with DE) | VALID (starts with DE) |
+| r2 | NOT_APPLICABLE (country FR is not blocked) | INVALID (len 4 instead of 9) | VALID (iban starts with FR) | NOT_APPLICABLE (applies to DE only; record country is FR) |
+| r3 | INVALID (country ZZ is blocked) | INVALID (no vatId) | INVALID (empty iban) | NOT_APPLICABLE (applies to DE only; record country is ZZ) |
 
 ```sh
 curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' \
   --data-binary @dq-engine/src/test/resources/dq/engine/fixture.json
 ```
 
-The fault demo: a record without `country`/`vatId`, plus a non-object element. It returns 11 results and
+The fault demo: a record without `country`/`vatId`, plus a non-object element. It returns 15 results and
 2 errors (`ibanFormat` `MISSING_REQUIRED_FIELD` for r4 and `UNREADABLE_RECORD` at index 4). The rest of
 the batch is unaffected.
 
@@ -77,6 +79,29 @@ curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' -
   {"id":"r4","iban":"DE1"},
   42]'
 ```
+
+Country scope: each record's `country` decides whether a country-scoped rule applies to it. Here
+`category=tax` selects `vatFormat` (WORLD) and `deVatPrefix` (DE). `deVatPrefix` runs only on DE records,
+matching the country case-insensitively, so `c2` (`de`) is checked and fails. An FR record or one with no
+`country` gets `NOT_APPLICABLE`, with the reason in its provenance, and the rule's logic is not called.
+
+```sh
+curl -s -X POST 'localhost:8080/validations?category=tax' -H 'Content-Type: application/json' -d '[
+  {"id":"c1","vatId":"DE123456789","country":"DE"},
+  {"id":"c2","vatId":"AT123456789","country":"de"},
+  {"id":"c3","vatId":"FR123456789","country":"FR"},
+  {"id":"c4","vatId":"DE123456789"}]'
+```
+
+| record | vatFormat | deVatPrefix |
+|---|---|---|
+| c1 | VALID (len 11) | VALID (starts with DE) |
+| c2 | VALID (len 11) | INVALID, ERROR (starts with AT instead of DE) |
+| c3 | VALID (len 11) | NOT_APPLICABLE (applies to DE only; record country is FR) |
+| c4 | VALID (len 11) | NOT_APPLICABLE (applies to DE only; record has no country) |
+
+The `country` query parameter is a different, run-level filter: `?category=tax&country=FR` drops
+`deVatPrefix` from the run entirely (`rulesSelected` is 1), so no record gets a result for it.
 
 Streaming (no record limit, one `{"type":"record",…}` line per record, then a `summary` line), with
 rule selection:
