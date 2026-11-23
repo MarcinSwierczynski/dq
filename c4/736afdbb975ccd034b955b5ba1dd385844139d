@@ -1,0 +1,37 @@
+.gitignore
+  s_d5d1a93df045d4::t_f9ac8f3aa40b31 2-8
+README.md
+  s_d5d1a93df045d4::t_4c9433deed793b 1-12
+build.gradle.kts
+  s_d5d1a93df045d4::t_6dce1b35a30c1b 1-4
+dq-engine/build.gradle.kts
+  s_d5d1a93df045d4::t_f97938bc84557f 1-28
+dq-engine/src/test/java/dq/engine/BuildSmokeTest.java
+  s_d5d1a93df045d4::t_6017f3c426ea2d 1-13
+gradle/libs.versions.toml
+  s_d5d1a93df045d4::t_d577c7aa8ff838 1-9
+gradle/wrapper/gradle-wrapper.properties
+  s_d5d1a93df045d4::t_0352e646aba415 1-9
+gradlew
+  s_d5d1a93df045d4::t_36ae92f9b606ac 1-248
+gradlew.bat
+  s_d5d1a93df045d4::t_ef2c1b318229ec 1-82
+settings.gradle.kts
+  s_d5d1a93df045d4::t_fc4ad2f6517689 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c4736afdbb975ccd034b955b5ba1dd385844139d",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
