@@ -1,0 +1,25 @@
+dq-engine/src/main/java/dq/engine/api/Rule.java
+  s_d5d1a93df045d4::t_27ad2716d46000 1-105
+dq-engine/src/main/java/dq/engine/api/RuleCatalog.java
+  s_d5d1a93df045d4::t_7ea2122c09f235 1-45
+dq-engine/src/test/java/dq/engine/RuleCatalogTest.java
+  s_d5d1a93df045d4::t_aa42e625213c72 1-79
+dq-engine/src/testFixtures/java/dq/engine/fixtures/Fixture.java
+  s_d5d1a93df045d4::t_5a05071185d104 3-11,13,16,20-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c2178d87722585f0257fc9b942ab2a419f3d1866",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
