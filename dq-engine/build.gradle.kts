@@ -10,6 +10,9 @@ java {
 }
 
 dependencies {
+    // Internal only: Jackson types never appear in the exported API package.
+    implementation(libs.jackson.databind)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)

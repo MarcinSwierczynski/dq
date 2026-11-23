@@ -6,6 +6,7 @@ package dq.engine.api;
  * the calling thread and closes the source when the run ends, whatever the outcome.
  *
  * <p>Report an element that is not a record as {@link SourceElement#unreadable}; the run continues.
+ * Throw (ideally {@link RecordSourceException}) only when the stream itself is broken; that aborts the run.
  */
 public interface RecordSource extends AutoCloseable {
 
