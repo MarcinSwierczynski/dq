@@ -79,7 +79,7 @@ curl -s -N -X POST 'localhost:8080/validations?category=tax&country=DE&batchSize
 | Parameter | Meaning |
 |---|---|
 | `status`, `country`, `category` | Repeatable. Values of one parameter are ORed; different parameters are ANDed. RELEASED is always enforced. |
-| `batchSize` | Records per batch (≥ 1, default 1000). |
+| `batchSize` | Records per batch (1 to `dq.http.max-batch-size`, default 1000; the cap defaults to 10,000). |
 
 The buffered JSON response accepts at most `dq.http.max-records` (default 10,000) records and returns
 `413` beyond that. Malformed JSON returns a `400` problem detail. On the streaming endpoint the status

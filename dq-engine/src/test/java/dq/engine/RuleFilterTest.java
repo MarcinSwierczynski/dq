@@ -85,6 +85,29 @@ class RuleFilterTest {
     }
 
     @Test
+    void aThrowingFilterPropagatesUnchangedBeforeAnyRecordAndTheSourceIsClosed() {
+        var closed = new java.util.concurrent.atomic.AtomicBoolean();
+        dq.engine.api.RecordSource source = new dq.engine.api.RecordSource() {
+            @Override
+            public dq.engine.api.SourceElement next() {
+                throw new AssertionError("no record may be pulled when rule selection fails");
+            }
+
+            @Override
+            public void close() {
+                closed.set(true);
+            }
+        };
+        RuleFilter broken = rule -> { throw new IllegalStateException("tenant lookup failed"); };
+
+        assertThatThrownBy(() -> DqEngine.builder().catalog(RuleCatalog.of(ALL)).build()
+                        .validate(source, new CollectingListener(), RunOptions.builder().filter(broken).build()))
+                .isExactlyInstanceOf(IllegalStateException.class)
+                .hasMessage("tenant lookup failed");
+        assertThat(closed).isTrue();
+    }
+
+    @Test
     void rejectsEmptyArguments() {
         assertThatThrownBy(RuleFilter::countryScope).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(RuleFilter::category).isInstanceOf(IllegalArgumentException.class);

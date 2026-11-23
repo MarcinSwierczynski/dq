@@ -34,6 +34,7 @@ public record EvaluationError(
         Objects.requireNonNull(recordId, "recordId");
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(message, "message");
-        fieldsRead = Collections.unmodifiableSequencedMap(new LinkedHashMap<>(fieldsRead));
+        fieldsRead = Collections.unmodifiableSequencedMap(
+                new LinkedHashMap<>(Objects.requireNonNull(fieldsRead, "fieldsRead")));
     }
 }

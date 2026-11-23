@@ -10,6 +10,7 @@ import dq.engine.api.RunOptions;
 import dq.engine.api.RunSummary;
 import dq.engine.api.ValidationRunException;
 import dq.http.Views.ErrorView;
+import dq.http.Views.ResultView;
 import dq.http.Views.SummaryView;
 import dq.http.Views.ValidationResponse;
 import java.io.InputStream;
@@ -37,7 +38,8 @@ import tools.jackson.databind.json.JsonMapper;
  *       line (or an {@code aborted} line); no record limit, bounded memory.</li>
  * </ul>
  * Optional query parameters {@code status}, {@code country}, {@code category} (repeatable; OR within a
- * parameter, AND across parameters) and {@code batchSize}.
+ * parameter, AND across parameters) and {@code batchSize} (at most {@code dq.http.max-batch-size}: the
+ * engine buffers a whole batch, so this cap is what bounds the streaming endpoint's memory).
  */
 @RestController
 class ValidationController {
@@ -46,11 +48,14 @@ class ValidationController {
     private final DqEngine engine;
     private final JsonMapper json;
     private final int maxRecords;
+    private final int maxBatchSize;
 
-    ValidationController(DqEngine engine, JsonMapper json, @Value("${dq.http.max-records:10000}") int maxRecords) {
+    ValidationController(DqEngine engine, JsonMapper json, @Value("${dq.http.max-records:10000}") int maxRecords,
+            @Value("${dq.http.max-batch-size:10000}") int maxBatchSize) {
         this.engine = engine;
         this.json = json;
         this.maxRecords = maxRecords;
+        this.maxBatchSize = maxBatchSize;
     }
 
     @PostMapping(path = "/validations", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -75,7 +80,8 @@ class ValidationController {
                 case null, default -> e;
             };
         }
-        return new ValidationResponse(SummaryView.of(summary), listener.results(),
+        return new ValidationResponse(SummaryView.of(summary),
+                listener.results().stream().map(ResultView::of).toList(),
                 listener.errors().stream().map(ErrorView::of).toList());
     }
 
@@ -109,7 +115,7 @@ class ValidationController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(NDJSON)).body(stream);
     }
 
-    private static RunOptions options(List<RuleStatus> status, List<String> country, List<String> category,
+    private RunOptions options(List<RuleStatus> status, List<String> country, List<String> category,
             Integer batchSize) {
         RuleFilter filter = RuleFilter.all();
         try {
@@ -124,6 +130,10 @@ class ValidationController {
             }
             var builder = RunOptions.builder().filter(filter);
             if (batchSize != null) {
+                if (batchSize > maxBatchSize) {
+                    throw new IllegalArgumentException(
+                            "batchSize must be at most " + maxBatchSize + ", was " + batchSize);
+                }
                 builder.batchSize(batchSize);
             }
             return builder.build();

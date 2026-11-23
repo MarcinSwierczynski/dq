@@ -65,9 +65,12 @@ minor version may:
 - add a variant to `CountryScope`;
 - add overloads, factories, or default methods.
 
-Record components are never added to existing records, because that would break their constructors.
-That is why `RunSummary` shipped in its full shape from the start. `dq.engine.internal` may change in
-any release, and the module system enforces that boundary.
+Record components are never added to existing records: that changes the canonical constructor and
+breaks record patterns (`case Provenance(var id, …)`). So the types expected to grow are final
+classes with accessors: `RunOptions` (built through its builder; new settings get a builder method
+and a default) and `Provenance` (a rule version can become a new accessor). `RunSummary` stays a
+record and shipped in its full shape from the start. `dq.engine.internal` may change in any release,
+and the module system enforces that boundary.
 
 ## 2. Fault isolation (F3)
 
@@ -100,7 +103,8 @@ is counted only after its listener call returns. If the listener failed silently
 the promise that the caller receives every outcome would be broken. Records buffered before a source
 failure are still evaluated. A failing `RecordSource.close()` is logged and does not discard the
 summary. An exception from a host `RuleFilter` is a programming error: it is thrown from `validate`
-unchanged, before any record is read, and the source is still closed. An I/O failure on the input is
+unchanged, before any record is read, and the source is still closed
+(`RuleFilterTest.aThrowingFilterPropagatesUnchangedBeforeAnyRecordAndTheSourceIsClosed`). An I/O failure on the input is
 reported as `could not read input`, separately from malformed JSON
 (`JsonArraySourceTest.anIoFailureIsReportedAsUnreadableInputNotAsMalformedJson`).
 
@@ -132,6 +136,10 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
   future parallel executor would split on. `BatchingTest` checks the 1000/1000/500 split.
 - Cancellation: the engine checks the thread's interrupt flag between records, returns `CANCELLED`
   with the counts so far, and leaves the flag set (`BatchingTest.interruptStopsTheRunBetweenRecordsAsCancelled`).
+  Because the check also runs inside a batch, a cancelled (or aborted) run can deliver outcomes after
+  its last `onBatchComplete`; that partial batch gets no callback, so a host that commits per batch
+  also flushes when `validate` returns or throws
+  (`BatchingTest.aRunCancelledInsideABatchGetsNoCallbackForThatPartialBatch`).
 
 ## 4. Seams for host-supplied inputs
 
@@ -163,11 +171,14 @@ worker. Whatever the filter selects, the engine **always** intersects it with `s
   is on the wire, the last line is `{"type":"aborted",…}`. A real-server check streamed 50,000 records
   (150,000 outcomes) in about 0.7 s.
 - Query parameters `status`, `country`, `category`, and `batchSize` map onto `RuleFilter` and
-  `RunOptions`.
+  `RunOptions`. The engine buffers one whole batch, so `batchSize` is capped at
+  `dq.http.max-batch-size` (default 10,000; `400` above it). Without the cap a client could request one
+  batch the size of the whole body and defeat the streaming endpoint's memory bound
+  (`ValidationControllerTest.aBatchSizeAboveTheCapIs400OnBothEndpoints`).
 - `ErrorView` drops the `Throwable` so stack traces never reach clients. Rule exception messages are
   passed through as they are; a production host would map `RULE_EXCEPTION` to a generic message.
-- It is an example: it has no authentication, and its only input limit is a record-count cap on the
-  buffered endpoint. Input I/O error messages also reach clients in the `aborted` line.
+- It is an example: it has no authentication, and its only input limits are a record-count cap on the
+  buffered endpoint and the `batchSize` cap. Input I/O error messages also reach clients in the `aborted` line.
 
 **Sensitive data.** VAT ids and IBANs appear in `fieldsRead`. The library never logs field values:
 `System.Logger` gets only ids, the error kind, and the cause type. The host decides whether

@@ -189,6 +189,14 @@ class FaultIsolationTest {
         assertThat(listener.results()).singleElement().extracting(Result::ruleId).isEqualTo("vatFormat");
     }
 
+    @Test
+    void outcomeTypesNameAMissingFieldsReadMap() {
+        assertThatThrownBy(() -> new EvaluationError(Optional.of("r"), "id", 0, ErrorKind.NULL_VALUE, "m", null,
+                null, null)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
+        assertThatThrownBy(() -> new dq.engine.api.Provenance("r", "l", "id", 0, null, "v",
+                dq.engine.api.Provenance.Basis.MAPPED)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
+    }
+
     private static String recurse(int depth) {
         return recurse(depth + 1) + depth;
     }

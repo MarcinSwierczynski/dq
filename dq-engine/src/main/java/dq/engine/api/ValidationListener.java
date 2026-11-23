@@ -14,6 +14,13 @@ public interface ValidationListener {
 
     void onError(EvaluationError error);
 
-    /** Called after each batch; a natural flush or commit point. Does nothing by default. */
+    /**
+     * Called after each fully evaluated batch; a natural flush or commit point. Does nothing by default.
+     *
+     * <p>A run that ends early does <b>not</b> get a call for its last, partial batch: when it is
+     * {@link RunStatus#CANCELLED} (the interrupt is checked between records, also inside a batch) or
+     * {@link RunStatus#ABORTED}, outcomes may have been delivered after the last {@code onBatchComplete}.
+     * Hosts that commit per batch should also flush once {@code validate} returns or throws.
+     */
     default void onBatchComplete(BatchProgress progress) {}
 }
