@@ -308,3 +308,11 @@ Each Step is one commit, and `./gradlew build` passes after every Step. Docs-onl
 16. *(optional)* **`JsonRuleCatalog` + `LogicRegistry`.** Rule definitions loaded from JSON with logic resolved by name; an unknown name gives `InvalidCatalogException`. *Test:* the fixture catalog loaded from JSON gives results identical to `FixtureScenarioTest`.
 17. *(docs)* **`DESIGN.md` final.** Fault isolation, bounded memory, seams, the semver policy, trade-offs, and next steps: parallel batches on virtual threads, per-rule timeouts, CEL logic, NDJSON input, a rule version or hash in provenance, an option to suppress `OUT_OF_SCOPE` Results, multi-country scope, and Maven publication. Every claim points to a test or a class.
 18. *(docs)* **Archive the Delta** into `docs/specs/capabilities/dq-rule-evaluation.md` and `docs/specs/capabilities/dq-rule-selection.md`, using the capability file shape with `Source: docs/specs/2026-11-20-dq-rule-engine.md`.
+
+## 📋 Implementation status (2026-11-23)
+Steps 1–15, 17 and 18 are implemented, one commit per Step on `feat/dq-rule-engine`. Step 16 (`JsonRuleCatalog` + `LogicRegistry`) is optional and was not built; it is listed as a next step in `DESIGN.md`. Deviations from this plan:
+- Step 1: the GitHub repository already existed.
+- Step 3: there is no public `DataRecord`. The engine reads the record id (with the `#index` fallback) and the country from the field map, so the id-fallback test moved to Step 5 (`ScopeAndSelectionTest`). `RuleLogic`, `Result` and `EvaluationError` were added in Step 3, next to `FieldReader` and `Provenance`.
+- Data Model: `RecordSource` is `SourceElement next()`, where a sealed `SourceElement` is `Fields | Unreadable`, plus `close()`. A failing `close()` is logged and does not change the run's result.
+- `InvalidCatalogException` is also thrown by `Rule.builder().build()` and `DecisionMapping.build()`, so an invalid definition cannot be constructed at all.
+- `RunOptions` gained its `filter` component in Step 13, the Step that introduced `RuleFilter`.
