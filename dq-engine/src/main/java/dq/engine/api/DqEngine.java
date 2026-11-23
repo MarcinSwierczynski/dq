@@ -10,7 +10,7 @@ import java.util.Objects;
  *
  * <pre>{@code
  * DqEngine engine = DqEngine.builder().catalog(RuleCatalog.of(rules)).build();
- * RunSummary summary = engine.validate(RecordSources.of(records), listener);
+ * RunSummary summary = engine.validate(RecordSources.jsonArray(in), listener);
  * }</pre>
  */
 public final class DqEngine {
@@ -33,7 +33,7 @@ public final class DqEngine {
      * {@code listener} as soon as it is produced, and closes the source.
      *
      * @return the summary, with status {@link RunStatus#COMPLETED}
-     * @throws ValidationRunException if the listener fails; carries the partial summary
+     * @throws ValidationRunException if the listener or the source fails; carries the partial summary
      */
     public RunSummary validate(RecordSource source, ValidationListener listener) {
         Objects.requireNonNull(source, "source");

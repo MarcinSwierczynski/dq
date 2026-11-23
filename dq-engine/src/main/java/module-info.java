@@ -3,5 +3,7 @@
  * parsing in {@code dq.engine.internal} are implementation details and may change in any release.
  */
 module dq.engine {
+    requires tools.jackson.databind;
+
     exports dq.engine.api;
 }

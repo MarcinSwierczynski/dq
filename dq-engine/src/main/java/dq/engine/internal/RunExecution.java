@@ -81,12 +81,19 @@ public final class RunExecution {
     }
 
     private RunStatus loop() {
-        SourceElement element;
-        while ((element = source.next()) != null) {
+        while (true) {
+            SourceElement element;
+            try {
+                element = source.next();
+            } catch (RuntimeException e) {
+                throw new Abort("record source failed after " + recordsRead + " records: " + e.getMessage(), e);
+            }
+            if (element == null) {
+                return RunStatus.COMPLETED;
+            }
             evaluate(element, recordsRead);
             recordsRead++;
         }
-        return RunStatus.COMPLETED;
     }
 
     private void evaluate(SourceElement element, long index) {

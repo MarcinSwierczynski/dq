@@ -1,5 +1,7 @@
 package dq.engine.api;
 
+import dq.engine.internal.JsonArrayRecordSource;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,5 +16,15 @@ public final class RecordSources {
         Objects.requireNonNull(records, "records");
         Iterator<? extends Map<String, ?>> it = List.copyOf(records).iterator();
         return () -> it.hasNext() ? SourceElement.of(it.next()) : null;
+    }
+
+    /**
+     * A JSON array of objects. Parsing starts on the first {@link RecordSource#next()} call (inside
+     * {@code validate}), which reads the whole array. Non-object elements become
+     * {@link SourceElement.Unreadable}; malformed JSON or I/O failure throws {@link RecordSourceException}.
+     * The source owns {@code json} and closes it.
+     */
+    public static RecordSource jsonArray(InputStream json) {
+        return new JsonArrayRecordSource(Objects.requireNonNull(json, "json"));
     }
 }
