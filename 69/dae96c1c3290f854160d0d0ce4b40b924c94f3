@@ -1,0 +1,27 @@
+dq-http-example/src/main/java/dq/http/NdjsonListener.java
+  s_d5d1a93df045d4::t_937ea436c369b9 1-58
+dq-http-example/src/main/java/dq/http/ValidationController.java
+  s_d5d1a93df045d4::t_f81bfdbfd18c39 7-9,16-18,23,26,28-29,32-40,44-45,47,50,52,58-63,67,72,82-134
+dq-http-example/src/main/resources/application.properties
+  s_d5d1a93df045d4::t_01d362b97194de 3,5-6
+dq-http-example/src/test/java/dq/http/RecordLimitTest.java
+  s_d5d1a93df045d4::t_a2cf384f3c0459 23,28
+dq-http-example/src/test/java/dq/http/ValidationControllerTest.java
+  s_d5d1a93df045d4::t_6c47bebf0d08ab 3,5,9,15,22-24,33-35,99-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69dae96c1c3290f854160d0d0ce4b40b924c94f3",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
