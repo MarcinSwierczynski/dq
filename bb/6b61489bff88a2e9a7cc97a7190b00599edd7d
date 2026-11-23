@@ -1,0 +1,23 @@
+dq-engine/src/main/java/dq/engine/api/RecordSources.java
+  s_d5d1a93df045d4::t_5bd2e61977ded0 22-25
+dq-engine/src/main/java/dq/engine/internal/JsonArrayRecordSource.java
+  s_d5d1a93df045d4::t_08a5a5b59869eb 11-12,20-21,24,26,31-32,40,44-71,74,77-81,88-96,105-121
+dq-engine/src/test/java/dq/engine/JsonArraySourceTest.java
+  s_d5d1a93df045d4::t_28d8222e1a3b2f 89,97-98,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb6b61489bff88a2e9a7cc97a7190b00599edd7d",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
