@@ -1,0 +1,41 @@
+dq-engine/build.gradle.kts
+  s_d5d1a93df045d4::t_2f2c2c16bfc061 3
+dq-engine/src/main/java/dq/engine/api/ErrorKind.java
+  s_d5d1a93df045d4::t_be5d7009262b15 1-22
+dq-engine/src/main/java/dq/engine/api/EvaluationError.java
+  s_d5d1a93df045d4::t_fdb1c7cef126aa 1-39
+dq-engine/src/main/java/dq/engine/api/FieldReader.java
+  s_d5d1a93df045d4::t_f27c8171e9800b 1-35
+dq-engine/src/main/java/dq/engine/api/Provenance.java
+  s_d5d1a93df045d4::t_9037e9cbfbb2a5 1-48
+dq-engine/src/main/java/dq/engine/api/Result.java
+  s_d5d1a93df045d4::t_1b45a62fc5aff3 1-22
+dq-engine/src/main/java/dq/engine/api/RuleLogic.java
+  s_d5d1a93df045d4::t_b6b715111e42e2 1-15
+dq-engine/src/main/java/dq/engine/api/Severity.java
+  s_d5d1a93df045d4::t_4ee2675fc51cae 3
+dq-engine/src/main/java/dq/engine/internal/FieldAccessException.java
+  s_d5d1a93df045d4::t_ced49ca305e5ec 1-19
+dq-engine/src/main/java/dq/engine/internal/TrackingFieldReader.java
+  s_d5d1a93df045d4::t_6b6670a6c8726c 1-71
+dq-engine/src/test/java/dq/engine/internal/TrackingFieldReaderTest.java
+  s_d5d1a93df045d4::t_1494275318bdde 1-63
+dq-engine/src/testFixtures/java/dq/engine/fixtures/Fixture.java
+  s_d5d1a93df045d4::t_252d76c09d7841 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "435c274afb8b8437ac3b647f10ef3afd935c64dd",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
