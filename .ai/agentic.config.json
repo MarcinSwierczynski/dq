@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "baseBranch": "main",
+  "tracker": "github",
+  "validation": {
+    "commands": ["./gradlew build"]
+  },
+  "labels": { "enabled": false },
+  "qaGate": false,
+  "paths": {
+    "runs": ".ai/runs",
+    "analysis": ".ai/analysis",
+    "specs": "docs/specs",
+    "qa": ".ai/qa"
+  },
+  "agentHarness": null
+}
