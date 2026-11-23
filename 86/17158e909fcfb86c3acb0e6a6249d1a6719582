@@ -1,0 +1,39 @@
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_cc5f98e1b715d0::t_f8f7a84513e1d8 36
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_cc5f98e1b715d0::t_f8f7a84513e1d8 18,64-67,117,123-136,166-171,179,189,193-201,206-213
+  s_cc5f98e1b715d0::t_334981a91cd2a0 214
+dq-engine/src/main/java/dq/engine/api/ValidationListener.java
+  s_cc5f98e1b715d0::t_f8f7a84513e1d8 7-9
+dq-engine/src/main/java/dq/engine/api/ValidationRunException.java
+  s_1850d04bb52991::t_8f51f7014146f4 1-24
+dq-engine/src/main/java/dq/engine/api/RunStatus.java
+  s_cc5f98e1b715d0::t_f8f7a84513e1d8 9
+dq-engine/src/test/java/dq/engine/FaultIsolationTest.java
+  s_1850d04bb52991::t_a0d470f01e922f 1-5,7-51,55-56,59-101,104-195
+  s_1850d04bb52991::t_10721848eab2e8 6,52-54,57-58,102-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8617158e909fcfb86c3acb0e6a6249d1a6719582",
+  "prompts": {},
+  "sessions": {
+    "s_1850d04bb52991": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4966d2f6-6bbf-4370-af38-a25b223dcc2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    },
+    "s_cc5f98e1b715d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c989da1c-765c-40b5-ab3c-b6e88815115d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
