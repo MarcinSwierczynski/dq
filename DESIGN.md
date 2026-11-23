@@ -69,24 +69,6 @@ Why this shape:
   (`FixtureScenarioTest.emitsInInputOrderThenCatalogOrder`). Callbacks run on the calling thread, so
   listeners do not need to be thread-safe.
 
-### Semver policy
-
-The API is the public types of the exported packages. Breaking changes need a major version. These count as additive, so a
-minor version may:
-
-- add a constant to `ErrorKind` (documented as open: switch over it with a `default` branch);
-- add a variant to `CountryScope`;
-- add overloads, factories, or default methods.
-
-Record components are never added to existing records: that changes the canonical constructor and
-breaks record patterns (`case Provenance(var id, …)`). So the types expected to grow are final
-classes with accessors: `RunOptions` (built through its builder; new settings get a builder method
-and a default) and `Provenance`, which already grew this way: `explanation()` was added with a new
-constructor overload, and the old constructor still works. `RunSummary` stays a record and shipped
-in its full shape from the start. `Rule` is a record that gained its `explainer` component before the
-first release; after 0.1.0, new rule metadata needs the same treatment. Package-private implementation classes may change in any release,
-and Java access control enforces that boundary.
-
 ## 2. Fault isolation (F3)
 
 Each (rule × record) evaluation is its own isolation boundary (`RunExecution.evaluate(Rule, …)`). It
