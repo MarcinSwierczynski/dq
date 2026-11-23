@@ -1,0 +1,43 @@
+dq-engine/src/main/java/dq/engine/api/Provenance.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-8,10-48
+  s_cc5f98e1b715d0::t_3b57bb0a311f0e 9
+dq-engine/src/main/java/dq/engine/api/ErrorKind.java
+  s_cc5f98e1b715d0::t_3b57bb0a311f0e 4
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-3,5-22
+dq-engine/src/main/java/dq/engine/internal/TrackingFieldReader.java
+  s_1850d04bb52991::t_56898ea79fcb43 1-71
+dq-engine/src/test/java/dq/engine/internal/TrackingFieldReaderTest.java
+  s_cc5f98e1b715d0::t_3b57bb0a311f0e 8,16,62-69
+  s_1850d04bb52991::t_87b2a85a1d7046 1-7,9-15,17-25,32-61,70-71
+  s_1850d04bb52991::t_c26288985cc5ec 26-31
+dq-engine/src/main/java/dq/engine/internal/FieldAccessException.java
+  s_1850d04bb52991::t_56898ea79fcb43 1-19
+dq-engine/src/main/java/dq/engine/api/FieldReader.java
+  s_cc5f98e1b715d0::t_3b57bb0a311f0e 6
+  s_1850d04bb52991::t_24d1628bd85ad4 27-30
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-5,7-26,31-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc46e202ecba4a87b30e291ff723525e78edbfd7",
+  "prompts": {},
+  "sessions": {
+    "s_1850d04bb52991": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4966d2f6-6bbf-4370-af38-a25b223dcc2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    },
+    "s_cc5f98e1b715d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c989da1c-765c-40b5-ab3c-b6e88815115d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
