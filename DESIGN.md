@@ -121,8 +121,8 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 - Results refer to rules and records **by id**, never by object, so a listener that keeps results does
   not keep records alive.
 - The bound assumes records of bounded size: one element is materialised whole. Jackson's default
-  `StreamReadConstraints` limit string length and nesting depth, but not the size of an object, so a
-  host that accepts untrusted input should also cap the request or message size.
+  `StreamReadConstraints` limit string length and nesting depth, but by default not document length
+  or token count, so a host that accepts untrusted input should also cap the request or message size.
 - **Proof** (`ScaleTest`, run by `scaleTest` with `maxHeapSize = "64m"`; `check` depends on it): 1,000,000
   generated records are streamed through the real `jsonArray` path against the 3 fixture rules. The
   run produces 3,000,000 outcomes, and on a laptop it takes about 0.7 s (~1.4M records/s). As a control,
@@ -166,8 +166,8 @@ worker. Whatever the filter selects, the engine **always** intersects it with `s
   `RunOptions`.
 - `ErrorView` drops the `Throwable` so stack traces never reach clients. Rule exception messages are
   passed through as they are; a production host would map `RULE_EXCEPTION` to a generic message.
-- It is an example: it has no authentication and no request-size limit beyond the buffered
-  endpoint's record cap.
+- It is an example: it has no authentication, and its only input limit is a record-count cap on the
+  buffered endpoint. Input I/O error messages also reach clients in the `aborted` line.
 
 **Sensitive data.** VAT ids and IBANs appear in `fieldsRead`. The library never logs field values:
 `System.Logger` gets only ids, the error kind, and the cause type. The host decides whether
