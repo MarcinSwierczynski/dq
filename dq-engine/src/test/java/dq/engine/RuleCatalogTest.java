@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dq.engine.api.Decision;
 import dq.engine.api.DecisionMapping;
+import dq.engine.api.DqEngine;
 import dq.engine.api.InvalidCatalogException;
 import dq.engine.api.Rule;
 import dq.engine.api.RuleCatalog;
@@ -12,6 +13,7 @@ import dq.engine.api.RuleStatus;
 import dq.engine.api.Severity;
 import dq.engine.fixtures.Fixture;
 import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class RuleCatalogTest {
@@ -29,6 +31,15 @@ class RuleCatalogTest {
         assertThatThrownBy(() -> RuleCatalog.of(a, b))
                 .isInstanceOf(InvalidCatalogException.class)
                 .hasMessageContaining("duplicate rule id 'same'");
+    }
+
+    @Test
+    void engineRevalidatesHostSuppliedCatalogs() {
+        Rule a = valid().id("same").build();
+        RuleCatalog hostCatalog = () -> List.of(a, a);
+        assertThatThrownBy(() -> DqEngine.builder().catalog(hostCatalog).build())
+                .isInstanceOf(InvalidCatalogException.class)
+                .hasMessageContaining("duplicate");
     }
 
     @Test
