@@ -4,7 +4,7 @@ Source: docs/specs/2026-11-20-dq-rule-engine.md
 Status: implemented
 
 ## Requirement: One Result per applicable rule and record
-The engine SHALL emit exactly one `Result` or one `EvaluationError` for each (selected rule × readable record) pair. Each Result carries the decision, the rule's severity, and provenance: rule id and label, record id and index, the fields read with their values, the computed value, and how the decision was reached (`MAPPED` / `DEFAULT` / `OUT_OF_SCOPE`).
+The engine SHALL emit exactly one `Result` or one `EvaluationError` for each (selected rule × readable record) pair. Each Result carries the decision, the rule's severity, and provenance: rule id and label, record id and index, the fields read with their values, the computed value, how the decision was reached (`MAPPED` / `DEFAULT` / `OUT_OF_SCOPE`), and an optional plain-words explanation from the rule's explainer (the engine's own for `OUT_OF_SCOPE`).
 
 ### Scenario: §5 fixture
 - WHEN the §5 records r1–r3 are validated against `countryBlocked`, `vatFormat`, and `ibanFormat`
@@ -47,11 +47,11 @@ The engine SHALL stop the run and throw `ValidationRunException` (carrying the p
 - THEN `validate` throws `ValidationRunException` whose partial summary has `resultCount = 1`, because an outcome is counted only after its listener call returns normally
 
 ## Requirement: Run summary
-`validate` SHALL return a `RunSummary` with records read, rules selected, result count, error count, a count per `Decision` and per `Severity` (every enum key present, zeros included), the duration, and a completion status.
+`validate` SHALL return a `RunSummary` with records read, rules selected, result count, error count, a count per `Decision`, a count of findings (`INVALID` and `REVIEW` results) per `Severity` (every enum key present, zeros included), the duration, and a completion status.
 
 ### Scenario: Fixture summary
 - WHEN the §5 fixture runs, with severities `countryBlocked=ERROR`, `vatFormat=ERROR`, `ibanFormat=WARNING`
-- THEN results=9, errors=0, `VALID=3, INVALID=4, REVIEW=0, NOT_APPLICABLE=2`, `ERROR=6, WARNING=3, INFO=0`
+- THEN results=9, errors=0, `VALID=3, INVALID=4, REVIEW=0, NOT_APPLICABLE=2`, `ERROR=3, WARNING=1, INFO=0`
 
 ## Requirement: Bounded-memory streaming
 The engine SHALL process a streamed JSON input of any length with heap use bounded by `batchSize`, not by the input size, delivering each outcome to the listener as it is produced. After each batch it SHALL call `onBatchComplete`.

@@ -190,6 +190,37 @@ class FaultIsolationTest {
     }
 
     @Test
+    void aThrowingExplainerFailsOnlyItsOwnCellAsARuleException() {
+        var listener = new CollectingListener();
+        Rule shaky = rule("shaky", f -> { f.text("id"); return "ok"; })
+                .explain(e -> { throw new IllegalStateException("cannot explain"); }).build();
+        DqEngine.builder().catalog(RuleCatalog.of(shaky, Fixture.VAT_FORMAT)).build()
+                .validate(RecordSources.of(List.of(Fixture.RECORDS.getFirst())), listener);
+
+        assertThat(listener.errors()).singleElement().satisfies(e -> {
+            assertThat(e.ruleId()).contains("shaky");
+            assertThat(e.kind()).isEqualTo(ErrorKind.RULE_EXCEPTION);
+            assertThat(e.message()).isEqualTo("rule explanation threw: cannot explain");
+            assertThat(e.fieldsRead()).containsOnlyKeys("id");
+        });
+        assertThat(listener.results()).singleElement().extracting(Result::ruleId).isEqualTo("vatFormat");
+    }
+
+    @Test
+    void anExplainerSeesOnlyWhatTheLogicReadAndMayGiveNoReason() {
+        var listener = new CollectingListener();
+        Rule reads = rule("reads", f -> { f.text("vatId"); f.text("missing"); return "ok"; })
+                .explain(e -> e.text("vatId").orElse("-") + "|" + e.text("country").orElse("unseen")
+                        + "|" + e.raw("missing").isPresent() + "|" + e.value()).build();
+        Rule silent = rule("silent", f -> "ok").explain(e -> null).build();
+        DqEngine.builder().catalog(RuleCatalog.of(reads, silent, rule("plain", f -> "ok").build())).build()
+                .validate(RecordSources.of(List.of(Fixture.RECORDS.getFirst())), listener);
+
+        assertThat(listener.results()).extracting(r -> r.provenance().explanation())
+                .containsExactly(Optional.of("DE111111111|unseen|false|ok"), Optional.empty(), Optional.empty());
+    }
+
+    @Test
     void outcomeTypesNameAMissingFieldsReadMap() {
         assertThatThrownBy(() -> new EvaluationError(Optional.of("r"), "id", 0, ErrorKind.NULL_VALUE, "m", null,
                 null, null)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");

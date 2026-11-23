@@ -35,6 +35,19 @@ class FixtureScenarioTest {
     }
 
     @Test
+    void explainsEveryCellInPlainWords() {
+        Map<String, String> expected = Map.of(
+                "r1/countryBlocked", "country DE is not blocked", "r1/vatFormat", "len 11",
+                "r1/ibanFormat", "iban starts with DE",
+                "r2/countryBlocked", "country FR is not blocked", "r2/vatFormat", "len 4 instead of 9",
+                "r2/ibanFormat", "iban starts with FR",
+                "r3/countryBlocked", "country ZZ is blocked", "r3/vatFormat", "no vatId",
+                "r3/ibanFormat", "empty iban");
+        expected.forEach((cell, why) ->
+                assertThat(byCell.get(cell).provenance().explanation()).as(cell).contains(why));
+    }
+
+    @Test
     void emitsInInputOrderThenCatalogOrder() {
         assertThat(listener.results()).extracting(r -> r.recordId() + "/" + r.ruleId()).containsExactly(
                 "r1/countryBlocked", "r1/vatFormat", "r1/ibanFormat",
@@ -81,7 +94,7 @@ class FixtureScenarioTest {
                 Map.entry(Decision.VALID, 3L), Map.entry(Decision.INVALID, 4L),
                 Map.entry(Decision.REVIEW, 0L), Map.entry(Decision.NOT_APPLICABLE, 2L));
         assertThat(summary.bySeverity()).containsExactly(
-                Map.entry(Severity.ERROR, 6L), Map.entry(Severity.WARNING, 3L), Map.entry(Severity.INFO, 0L));
+                Map.entry(Severity.ERROR, 3L), Map.entry(Severity.WARNING, 1L), Map.entry(Severity.INFO, 0L));
         assertThat(summary.duration()).isPositive();
     }
 }

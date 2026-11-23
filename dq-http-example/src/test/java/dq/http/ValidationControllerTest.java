@@ -49,21 +49,55 @@ class ValidationControllerTest {
     void validatesTheFixture() throws Exception {
         mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON).content(fixture()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.resultCount").value(9))
+                .andExpect(jsonPath("$.summary.resultCount").doesNotExist())
                 .andExpect(jsonPath("$.summary.errorCount").value(0))
                 .andExpect(jsonPath("$.summary.byDecision.VALID").value(3))
                 .andExpect(jsonPath("$.summary.byDecision.INVALID").value(4))
                 .andExpect(jsonPath("$.summary.byDecision.NOT_APPLICABLE").value(2))
-                .andExpect(jsonPath("$.summary.bySeverity.ERROR").value(6))
-                .andExpect(jsonPath("$.summary.bySeverity.WARNING").value(3))
+                // Findings only: r2/vatFormat, r3/countryBlocked, r3/vatFormat (ERROR) and r3/ibanFormat (WARNING).
+                .andExpect(jsonPath("$.summary.bySeverity.ERROR").value(3))
+                .andExpect(jsonPath("$.summary.bySeverity.WARNING").value(1))
+                .andExpect(jsonPath("$.summary.bySeverity.INFO").value(0))
+                .andExpect(jsonPath("$.records[0].recordIndex").doesNotExist())
                 .andExpect(jsonPath("$.summary.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.results", hasSize(9)))
-                .andExpect(jsonPath("$.results[4].ruleId").value("vatFormat"))
-                .andExpect(jsonPath("$.results[4].recordId").value("r2"))
-                .andExpect(jsonPath("$.results[4].decision").value("INVALID"))
-                .andExpect(jsonPath("$.results[4].provenance.fieldsRead.vatId").value("FR22"))
-                .andExpect(jsonPath("$.results[4].provenance.computedValue").value("bad"))
-                .andExpect(jsonPath("$.errors", hasSize(0)));
+                .andExpect(jsonPath("$.records", hasSize(3)))
+                // The §5 table, one entry per record, one column per rule.
+                .andExpect(jsonPath("$.records[0].recordId").value("r1"))
+                .andExpect(jsonPath("$.records[0].results.countryBlocked.decision").value("NOT_APPLICABLE"))
+                .andExpect(jsonPath("$.records[0].results.vatFormat.decision").value("VALID"))
+                .andExpect(jsonPath("$.records[0].results.ibanFormat.decision").value("VALID"))
+                .andExpect(jsonPath("$.records[1].recordId").value("r2"))
+                .andExpect(jsonPath("$.records[1].results.countryBlocked.decision").value("NOT_APPLICABLE"))
+                .andExpect(jsonPath("$.records[1].results.vatFormat.decision").value("INVALID"))
+                .andExpect(jsonPath("$.records[1].results.ibanFormat.decision").value("VALID"))
+                .andExpect(jsonPath("$.records[2].recordId").value("r3"))
+                .andExpect(jsonPath("$.records[2].results.countryBlocked.decision").value("INVALID"))
+                .andExpect(jsonPath("$.records[2].results.vatFormat.decision").value("INVALID"))
+                .andExpect(jsonPath("$.records[2].results.ibanFormat.decision").value("INVALID"))
+                // Provenance says why, in plain words.
+                .andExpect(jsonPath("$.records[1].results.vatFormat.provenance").value("len 4 instead of 9"))
+                .andExpect(jsonPath("$.records[2].results.vatFormat.provenance").value("no vatId"))
+                .andExpect(jsonPath("$.records[2].results.ibanFormat.provenance").value("empty iban"))
+                .andExpect(jsonPath("$.records[2].results.countryBlocked.provenance").value("country ZZ is blocked"))
+                .andExpect(jsonPath("$.records[0].results.countryBlocked.provenance").value("country DE is not blocked"))
+                .andExpect(jsonPath("$.records[0].results.vatFormat.provenance").value("len 11"))
+                // Severity only accompanies a finding: absent on VALID and NOT_APPLICABLE.
+                .andExpect(jsonPath("$.records[0].results.vatFormat.severity").doesNotExist())
+                .andExpect(jsonPath("$.records[0].results.ibanFormat.severity").doesNotExist())
+                .andExpect(jsonPath("$.records[0].results.countryBlocked.severity").doesNotExist())
+                .andExpect(jsonPath("$.records[2].results.countryBlocked.severity").value("ERROR"))
+                .andExpect(jsonPath("$.records[1].results.vatFormat.severity").value("ERROR"))
+                .andExpect(jsonPath("$.records[2].results.ibanFormat.severity").value("WARNING"))
+                .andExpect(jsonPath("$.records[0].errors", hasSize(0)));
+    }
+
+    @Test
+    void rulesAreListedInCatalogOrderWithinARecord() throws Exception {
+        String body = mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON).content(fixture()))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode results = json.readTree(body).get("records").get(0).get("results");
+
+        assertThat(results.propertyNames()).containsExactly("countryBlocked", "vatFormat", "ibanFormat");
     }
 
     @Test
@@ -71,21 +105,26 @@ class ValidationControllerTest {
         mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON).content(faultDemo()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.recordsRead").value(5))
-                .andExpect(jsonPath("$.summary.resultCount").value(11))
+                .andExpect(jsonPath("$.summary.resultCount").doesNotExist())
+                .andExpect(jsonPath("$.summary.byDecision.VALID").value(3))
+                .andExpect(jsonPath("$.summary.byDecision.INVALID").value(5))
+                .andExpect(jsonPath("$.summary.byDecision.NOT_APPLICABLE").value(3))
                 .andExpect(jsonPath("$.summary.errorCount").value(2))
-                .andExpect(jsonPath("$.results[9].recordId").value("r4"))
-                .andExpect(jsonPath("$.results[9].ruleId").value("countryBlocked"))
-                .andExpect(jsonPath("$.results[9].decision").value("NOT_APPLICABLE"))
-                .andExpect(jsonPath("$.results[10].ruleId").value("vatFormat"))
-                .andExpect(jsonPath("$.results[10].decision").value("INVALID"))
-                .andExpect(jsonPath("$.errors[0].ruleId").value("ibanFormat"))
-                .andExpect(jsonPath("$.errors[0].recordId").value("r4"))
-                .andExpect(jsonPath("$.errors[0].kind").value("MISSING_REQUIRED_FIELD"))
-                .andExpect(jsonPath("$.errors[0].fieldsRead.country").value("<absent>"))
-                .andExpect(jsonPath("$.errors[0].cause").doesNotExist())
-                .andExpect(jsonPath("$.errors[1].kind").value("UNREADABLE_RECORD"))
-                .andExpect(jsonPath("$.errors[1].recordIndex").value(4))
-                .andExpect(jsonPath("$.errors[1].ruleId").doesNotExist());
+                .andExpect(jsonPath("$.records", hasSize(5)))
+                .andExpect(jsonPath("$.records[3].recordId").value("r4"))
+                .andExpect(jsonPath("$.records[3].results.countryBlocked.decision").value("NOT_APPLICABLE"))
+                .andExpect(jsonPath("$.records[3].results.vatFormat.decision").value("INVALID"))
+                .andExpect(jsonPath("$.records[3].results.ibanFormat").doesNotExist())
+                .andExpect(jsonPath("$.records[3].errors", hasSize(1)))
+                .andExpect(jsonPath("$.records[3].errors[0].ruleId").value("ibanFormat"))
+                .andExpect(jsonPath("$.records[3].errors[0].kind").value("MISSING_REQUIRED_FIELD"))
+                .andExpect(jsonPath("$.records[3].errors[0].fieldsRead.country").value("<absent>"))
+                .andExpect(jsonPath("$.records[3].errors[0].cause").doesNotExist())
+                .andExpect(jsonPath("$.records[4].recordId").value("#4"))
+                .andExpect(jsonPath("$.records[4].errors[0].recordIndex").doesNotExist())
+                .andExpect(jsonPath("$.records[4].results").isEmpty())
+                .andExpect(jsonPath("$.records[4].errors[0].kind").value("UNREADABLE_RECORD"))
+                .andExpect(jsonPath("$.records[4].errors[0].ruleId").doesNotExist());
     }
 
     @Test
@@ -124,7 +163,9 @@ class ValidationControllerTest {
         mvc.perform(post("/validations?category=tax").contentType(MediaType.APPLICATION_JSON).content(fixture()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.rulesSelected").value(1))
-                .andExpect(jsonPath("$.results", hasSize(3)));
+                .andExpect(jsonPath("$.records", hasSize(3)))
+                .andExpect(jsonPath("$.records[0].results.vatFormat.decision").value("VALID"))
+                .andExpect(jsonPath("$.records[0].results.countryBlocked").doesNotExist());
         mvc.perform(post("/validations?category=tax&category=banking&country=DE")
                         .contentType(MediaType.APPLICATION_JSON).content(fixture()))
                 .andExpect(jsonPath("$.summary.rulesSelected").value(2));
@@ -146,19 +187,27 @@ class ValidationControllerTest {
     }
 
     @Test
-    void streamsOneLinePerOutcomeThenTheSummary() throws Exception {
+    void streamsOneLinePerRecordThenTheSummary() throws Exception {
         List<JsonNode> lines = ndjson("/validations", faultDemo());
 
-        assertThat(lines).hasSize(11 + 2 + 1);
-        assertThat(lines.getFirst().get("type").asString()).isEqualTo("result");
-        assertThat(lines.getFirst().get("ruleId").asString()).isEqualTo("countryBlocked");
-        assertThat(lines.getFirst().get("recordId").asString()).isEqualTo("r1");
-        assertThat(lines).extracting(l -> l.get("type").asString())
-                .containsSubsequence("result", "error", "error", "summary")
-                .filteredOn("error"::equals).hasSize(2);
+        assertThat(lines).hasSize(5 + 1);
+        assertThat(lines.subList(0, 5)).extracting(l -> l.get("type").asString()).containsOnly("record");
+        assertThat(lines.subList(0, 5)).extracting(l -> l.get("recordId").asString())
+                .containsExactly("r1", "r2", "r3", "r4", "#4");
+        JsonNode r2 = lines.get(1);
+        assertThat(r2.get("results").get("vatFormat").get("decision").asString()).isEqualTo("INVALID");
+        assertThat(r2.get("results").get("vatFormat").get("severity").asString()).isEqualTo("ERROR");
+        assertThat(r2.get("results").get("ibanFormat").has("severity")).as("VALID has no severity").isFalse();
+        assertThat(r2.get("results").get("countryBlocked").has("severity")).as("N/A has no severity").isFalse();
+        assertThat(r2.get("results").get("vatFormat").get("provenance").asString()).isEqualTo("len 4 instead of 9");
+        JsonNode r4 = lines.get(3);
+        assertThat(r4.get("results").propertyNames()).containsExactly("countryBlocked", "vatFormat");
+        assertThat(r4.get("errors").get(0).get("kind").asString()).isEqualTo("MISSING_REQUIRED_FIELD");
+        assertThat(lines.get(4).get("errors").get(0).get("kind").asString()).isEqualTo("UNREADABLE_RECORD");
         JsonNode last = lines.getLast();
         assertThat(last.get("type").asString()).isEqualTo("summary");
-        assertThat(last.get("resultCount").asInt()).isEqualTo(11);
+        assertThat(last.has("resultCount")).isFalse();
+        assertThat(last.get("byDecision").get("INVALID").asInt()).isEqualTo(5);
         assertThat(last.get("errorCount").asInt()).isEqualTo(2);
     }
 
@@ -167,6 +216,7 @@ class ValidationControllerTest {
         List<JsonNode> lines = ndjson("/validations?category=tax&batchSize=1", fixture());
 
         assertThat(lines).hasSize(3 + 1);
+        assertThat(lines.getFirst().get("results").propertyNames()).containsExactly("vatFormat");
         assertThat(lines.getLast().get("rulesSelected").asInt()).isEqualTo(1);
     }
 
@@ -175,11 +225,17 @@ class ValidationControllerTest {
         String truncated = "[{\"id\":\"r1\",\"country\":\"DE\",\"vatId\":\"DE111111111\",\"iban\":\"DE1\"}, {\"id\":";
         List<JsonNode> lines = ndjson("/validations", truncated);
 
-        assertThat(lines).hasSize(3 + 1);
+        assertThat(lines).hasSize(1 + 1);
+        assertThat(lines.getFirst().get("type").asString()).isEqualTo("record");
+        assertThat(lines.getFirst().get("recordId").asString()).isEqualTo("r1");
+        assertThat(lines.getFirst().get("results").size()).isEqualTo(3);
         JsonNode last = lines.getLast();
         assertThat(last.get("type").asString()).isEqualTo("aborted");
         assertThat(last.get("reason").asString()).contains("malformed JSON");
         assertThat(last.get("summary").get("status").asString()).isEqualTo("ABORTED");
-        assertThat(last.get("summary").get("resultCount").asInt()).isEqualTo(3);
+        assertThat(last.get("summary").has("resultCount")).isFalse();
+        assertThat(last.get("summary").get("byDecision").get("VALID").asInt()
+                + last.get("summary").get("byDecision").get("INVALID").asInt()
+                + last.get("summary").get("byDecision").get("NOT_APPLICABLE").asInt()).isEqualTo(3);
     }
 }

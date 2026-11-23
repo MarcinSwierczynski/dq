@@ -38,6 +38,13 @@ Why this shape:
   no access to `Decision` or the mapping. The lookup, with its `default` fallback, happens in the
   engine (`RunExecution.evaluate`). The type signature is what keeps the mapping declarative.
   `Provenance.basis` records whether the decision came from `MAPPED`, `DEFAULT`, or `OUT_OF_SCOPE`.
+- **Results explain themselves in plain words.** A rule may declare a `RuleExplainer`
+  (`Rule.builder().explain(…)`), which turns the evidence into a short reason such as
+  `len 4 instead of 9`, `no vatId`, or `empty iban` (`Provenance.explanation()`,
+  `FixtureScenarioTest.explainsEveryCellInPlainWords`). It runs after the decision is fixed and sees
+  only `RuleExplainer.Evidence`, the fields the logic read and the value it computed, so it can
+  neither change the outcome nor cite data the decision did not use. For `OUT_OF_SCOPE` the engine
+  writes the reason itself (`applies to DE only; record country is FR`), because the logic never ran.
 - **Immutable records and sealed types.** `DecisionMapping.Resolution`, `CountryScope`, and
   `SourceElement` are sealed, so the engine uses exhaustive switches. `Rule`, `DecisionMapping`,
   `RunSummary`, and `Provenance` copy their collections defensively. The copies are shallow: a nested
@@ -71,8 +78,10 @@ minor version may:
 Record components are never added to existing records: that changes the canonical constructor and
 breaks record patterns (`case Provenance(var id, …)`). So the types expected to grow are final
 classes with accessors: `RunOptions` (built through its builder; new settings get a builder method
-and a default) and `Provenance` (a rule version can become a new accessor). `RunSummary` stays a
-record and shipped in its full shape from the start. `dq.engine.internal` may change in any release,
+and a default) and `Provenance`, which already grew this way: `explanation()` was added with a new
+constructor overload, and the old constructor still works. `RunSummary` stays a record and shipped
+in its full shape from the start. `Rule` is a record that gained its `explainer` component before the
+first release; after 0.1.0, new rule metadata needs the same treatment. `dq.engine.internal` may change in any release,
 and the module system enforces that boundary.
 
 ## 2. Fault isolation (F3)
@@ -83,6 +92,7 @@ always produces exactly one `Result` or one `EvaluationError`, and the run conti
 | What happens in a rule | Outcome |
 |---|---|
 | Throws any `Exception` | `RULE_EXCEPTION` with the message, the cause type, the `cause`, and the fields read so far |
+| Its `RuleExplainer` throws | `RULE_EXCEPTION`, message `rule explanation threw: …`. The explainer is rule code too, so a broken one fails its cell rather than shipping a result without its reason (`FaultIsolationTest.aThrowingExplainerFailsOnlyItsOwnCellAsARuleException`). |
 | `StackOverflowError`, `LinkageError` | `RULE_EXCEPTION`. Recovery is safe here because the stack has unwound or the failure is local to the rule. |
 | Other `Error`s (`OutOfMemoryError`, …) | Propagate. The JVM is not in a state where isolating them makes sense. |
 | `fields.require(x)` on an absent or null field | `MISSING_REQUIRED_FIELD` |
@@ -165,12 +175,26 @@ worker. Whatever the filter selects, the engine **always** intersects it with `s
 
 `POST /validations` (`ValidationController`):
 
-- **JSON (`Accept: application/json`):** returns `{summary, results, errors}`. Results are buffered,
+- **Grouped by record.** Both responses have one entry per input record, in input order:
+  `{recordId, results, errors}`. `results` is keyed by rule id in catalog order, so the
+  §5 fixture reads as its table (one row per record, one column per rule). Each entry holds the
+  decision, `provenance` (the rule's explanation, such as `len 4 instead of 9`, or its label when it
+  gives none; the engine's fields read, computed value and basis are not sent) and, for `INVALID` and `REVIEW` only, the rule's severity: a passing or not-applicable check
+  is not a finding. The summary's `bySeverity` counts the same findings, by rule severity
+  (`RunSummary`): for the fixture `ERROR=3, WARNING=1`. The reply's summary leaves out
+  `resultCount`, which is the sum of `byDecision`; the library's `RunSummary` keeps it. `errors` holds that record's rule errors, or the one
+  `UNREADABLE_RECORD` error of a non-object element. The engine stays per-outcome; the host's
+  `RecordGrouping` listener builds the groups. Outcomes arrive in input order and a record never
+  spans batches, so it holds only the current record. Records are grouped by the engine's record
+  index, since ids may repeat, but the index is not sent: entries are in input order, and an
+  unreadable element's id (`#4`) already names its position. A run that selects no rules has no outcomes, and so no record entries.
+- **JSON (`Accept: application/json`):** returns `{summary, records}`. Results are buffered,
   so the request is capped at `dq.http.max-records` with a `RecordLimit` source decorator, giving
   `413` and a hint to use NDJSON. The cap is enforced while streaming the input, so the body is never
   fully buffered first. Malformed JSON gives a `400` problem detail.
-- **NDJSON (`Accept: application/x-ndjson`):** a `StreamingResponseBody`. It writes one line per
-  outcome, flushes after each batch, and ends with a `summary` line. If the run aborts after the 200
+- **NDJSON (`Accept: application/x-ndjson`):** a `StreamingResponseBody`. It writes one
+  `{"type":"record",…}` line per record, flushes after each batch, and ends with a `summary` line.
+  On an abort, the record in progress is still written before the `aborted` line. If the run aborts after the 200
   is on the wire, the last line is `{"type":"aborted",…}`. A real-server check streamed 50,000 records
   (150,000 outcomes) in about 0.7 s.
 - Query parameters `status`, `country`, `category`, and `batchSize` map onto `RuleFilter` and
@@ -194,7 +218,7 @@ provenance is stored or returned.
   scoped to a country.
 - **A3:** the record id comes from `recordIdField`. If that field is missing or blank, the id is
   `#<index>`. A numeric id is used as its string value. Duplicate ids are allowed, and
-  `recordIndex` tells them apart.
+  `recordIndex` (in the library's `Result` and `EvaluationError`) tells them apart.
 - **A4:** a value with no case and no default is an `UNMAPPED_VALUE` error. The engine never picks a
   decision itself.
 - **A5:** catalog problems are configuration errors and fail at build time.
