@@ -1,0 +1,36 @@
+dq-engine/src/main/java/module-info.java
+  s_65dcf4306abe1d::t_e7ee8098c34a46 7
+DESIGN.md
+  s_65dcf4306abe1d::t_2329ecb939091d 55
+  s_65dcf4306abe1d::t_fe8c7cb66eb536 54,56-57
+dq-engine/src/main/java/dq/engine/api/Provenance.java
+  s_65dcf4306abe1d::t_0b024b7f3d05ea 7,16,18,23-36
+  s_65dcf4306abe1d::t_2329ecb939091d 8,17
+dq-engine/build.gradle.kts
+  s_65dcf4306abe1d::t_e7ee8098c34a46 4-9
+gradle/libs.versions.toml
+  s_65dcf4306abe1d::t_e7ee8098c34a46 6-7,18
+dq-engine/src/main/java/dq/engine/api/RunOptions.java
+  s_65dcf4306abe1d::t_bae3752580ad4b 4,13,15,19,21-29,31-34,49
+  s_65dcf4306abe1d::t_2329ecb939091d 5,14
+  s_65dcf4306abe1d::t_2cfbb3e826f3af 35
+dq-engine/src/main/java/dq/engine/api/CountingListener.java
+  s_65dcf4306abe1d::t_ada3ceae82338f 3,5,7,10,12,14
+  s_65dcf4306abe1d::t_2329ecb939091d 4,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fe1141541826687e517dd3f0431bca032dd3a80",
+  "prompts": {},
+  "sessions": {
+    "s_65dcf4306abe1d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28605441-0395-4895-9c84-844317661702",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
