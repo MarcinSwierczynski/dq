@@ -6,6 +6,6 @@ public enum RunStatus {
     COMPLETED,
     /** The calling thread was interrupted; the run stopped between records. */
     CANCELLED,
-    /** A host-owned failure (listener or input stream) stopped the run. */
+    /** A host-owned failure (listener or input stream) stopped the run; see {@link ValidationRunException}. */
     ABORTED
 }

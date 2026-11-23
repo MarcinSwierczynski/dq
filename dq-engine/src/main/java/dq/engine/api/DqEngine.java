@@ -33,6 +33,7 @@ public final class DqEngine {
      * {@code listener} as soon as it is produced, and closes the source.
      *
      * @return the summary, with status {@link RunStatus#COMPLETED}
+     * @throws ValidationRunException if the listener fails; carries the partial summary
      */
     public RunSummary validate(RecordSource source, ValidationListener listener) {
         Objects.requireNonNull(source, "source");

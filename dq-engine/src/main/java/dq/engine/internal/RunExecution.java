@@ -15,6 +15,7 @@ import dq.engine.api.RunSummary;
 import dq.engine.api.Severity;
 import dq.engine.api.SourceElement;
 import dq.engine.api.ValidationListener;
+import dq.engine.api.ValidationRunException;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.util.EnumMap;
@@ -58,6 +59,10 @@ public final class RunExecution {
         try {
             selected = rules.stream().filter(rule -> rule.status() == RuleStatus.RELEASED).toList();
             return summary(loop());
+        } catch (Abort abort) {
+            RunSummary partial = summary(RunStatus.ABORTED);
+            LOG.log(Level.WARNING, "validation run aborted after {0} records: {1}", recordsRead, abort.getMessage());
+            throw new ValidationRunException(abort.getMessage(), abort.getCause(), partial);
         } finally {
             closeSource();
         }
@@ -107,14 +112,26 @@ public final class RunExecution {
         }
     }
 
+    /** The isolation boundary: whatever the rule does, the outcome is one Result or one EvaluationError. */
     private void evaluate(Rule rule, Map<String, ?> fields, String recordId, long index) {
         var reader = new TrackingFieldReader(fields);
         String value;
         try {
             value = rule.logic().compute(reader);
-        } catch (Exception e) {
-            // Per-evaluation fault isolation is not in place yet: a failing rule still stops the run.
-            throw new IllegalStateException("rule '" + rule.id() + "' failed on record " + recordId, e);
+        } catch (FieldAccessException e) {
+            emit(error(rule, recordId, index, e.kind(), e.getMessage(), null, reader));
+            return;
+        } catch (StackOverflowError e) {
+            // Checked before VirtualMachineError: the stack has unwound, so it is safe to continue.
+            emit(ruleException(rule, recordId, index, e, reader));
+            return;
+        } catch (Exception | LinkageError e) {
+            emit(ruleException(rule, recordId, index, e, reader));
+            return;
+        }
+        if (value == null) {
+            emit(error(rule, recordId, index, ErrorKind.NULL_VALUE, "rule logic returned null", null, reader));
+            return;
         }
         Resolution resolution = rule.mapping().resolve(value);
         switch (resolution) {
@@ -122,10 +139,8 @@ public final class RunExecution {
                     emit(result(rule, recordId, index, decision, value, Basis.MAPPED, reader));
             case Resolution.Defaulted(Decision decision) ->
                     emit(result(rule, recordId, index, decision, value, Basis.DEFAULT, reader));
-            case Resolution.Unmapped() -> emit(new EvaluationError(Optional.of(rule.id()), recordId, index,
-                    ErrorKind.UNMAPPED_VALUE,
-                    "computed value '" + value + "' is not mapped and the mapping has no default", null,
-                    reader.fieldsRead(), null));
+            case Resolution.Unmapped() -> emit(error(rule, recordId, index, ErrorKind.UNMAPPED_VALUE,
+                    "computed value '" + value + "' is not mapped and the mapping has no default", null, reader));
         }
     }
 
@@ -146,21 +161,54 @@ public final class RunExecution {
                 new Provenance(rule.id(), rule.label(), recordId, index, reader.fieldsRead(), value, basis));
     }
 
+    private static EvaluationError ruleException(Rule rule, String recordId, long index, Throwable e,
+            TrackingFieldReader reader) {
+        String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+        return error(rule, recordId, index, ErrorKind.RULE_EXCEPTION, "rule logic threw: " + message, e, reader);
+    }
+
+    private static EvaluationError error(Rule rule, String recordId, long index, ErrorKind kind, String message,
+            Throwable cause, TrackingFieldReader reader) {
+        return new EvaluationError(Optional.of(rule.id()), recordId, index, kind, message,
+                cause == null ? null : cause.getClass().getName(), reader.fieldsRead(), cause);
+    }
+
     /** An outcome is counted only after the listener call returned normally. */
     private void emit(Result result) {
-        listener.onResult(result);
+        deliver(() -> listener.onResult(result));
         resultCount++;
         byDecision.merge(result.decision(), 1L, Long::sum);
         bySeverity.merge(result.severity(), 1L, Long::sum);
     }
 
     private void emit(EvaluationError error) {
-        listener.onError(error);
+        // Never log field values: provenance may hold tax ids or IBANs.
+        LOG.log(Level.DEBUG, () -> "evaluation error: rule=" + error.ruleId().orElse("-") + " record="
+                + error.recordId() + " kind=" + error.kind() + " cause=" + error.causeType());
+        deliver(() -> listener.onError(error));
         errorCount++;
+    }
+
+    /** Calls the listener; an exception from it aborts the run (outcomes are never dropped silently). */
+    private static void deliver(Runnable callback) {
+        try {
+            callback.run();
+        } catch (RuntimeException e) {
+            throw new Abort("listener failed: " + e, e);
+        }
     }
 
     private RunSummary summary(RunStatus status) {
         return new RunSummary(recordsRead, selected.size(), resultCount, errorCount, byDecision, bySeverity,
                 Duration.ofNanos(System.nanoTime() - startNanos), status);
+    }
+
+    /** Unwinds the loop on a host-owned failure. */
+    private static final class Abort extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        Abort(String message, Throwable cause) {
+            super(message, cause, false, false);
+        }
     }
 }
