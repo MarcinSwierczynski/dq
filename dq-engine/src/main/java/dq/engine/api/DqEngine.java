@@ -40,13 +40,20 @@ public final class DqEngine {
      * @return the summary, with status {@link RunStatus#COMPLETED}, or {@link RunStatus#CANCELLED} when
      *     the calling thread was interrupted (its interrupt flag stays set)
      * @throws ValidationRunException if the listener or the source fails; carries the partial summary
+     * @throws RuntimeException whatever the run's {@link RuleFilter} throws, unchanged: a failing filter is
+     *     a programming error. It happens before any record is read, and the source is still closed.
      */
     public RunSummary validate(RecordSource source, ValidationListener listener, RunOptions options) {
         Objects.requireNonNull(source, "source");
         if (listener == null || options == null) {
-            source.close(); // the source is closed on every path, misuse included
-            Objects.requireNonNull(listener, "listener");
-            Objects.requireNonNull(options, "options");
+            // The source is closed on every path, misuse included; a failing close must not hide the misuse.
+            var misuse = new NullPointerException(listener == null ? "listener" : "options");
+            try {
+                source.close();
+            } catch (RuntimeException closeFailure) {
+                misuse.addSuppressed(closeFailure);
+            }
+            throw misuse;
         }
         return new RunExecution(rules, recordIdField, countryField, source, listener, options).run();
     }

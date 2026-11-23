@@ -175,6 +175,26 @@ class JsonArraySourceTest {
     }
 
     @Test
+    void aFailingCloseDoesNotHideTheMisuse() {
+        dq.engine.api.RecordSource failingClose = new dq.engine.api.RecordSource() {
+            @Override
+            public dq.engine.api.SourceElement next() {
+                return null;
+            }
+
+            @Override
+            public void close() {
+                throw new IllegalStateException("close failed");
+            }
+        };
+        assertThatThrownBy(() -> engine.validate(failingClose, null))
+                .isExactlyInstanceOf(NullPointerException.class)
+                .hasMessage("listener")
+                .satisfies(e -> assertThat(e.getSuppressed()).singleElement()
+                        .extracting(Throwable::getMessage).isEqualTo("close failed"));
+    }
+
+    @Test
     void theSourceIsClosedEvenWhenValidateIsMisused() {
         var stream = new TrackingStream("[]");
         assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(stream), null))

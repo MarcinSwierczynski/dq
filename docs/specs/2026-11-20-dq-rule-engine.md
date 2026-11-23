@@ -316,3 +316,4 @@ Steps 1–15, 17 and 18 are implemented, one commit per Step on `feat/dq-rule-en
 - Data Model: `RecordSource` is `SourceElement next()`, where a sealed `SourceElement` is `Fields | Unreadable`, plus `close()`. A failing `close()` is logged and does not change the run's result.
 - `InvalidCatalogException` is also thrown by `Rule.builder().build()` and `DecisionMapping.build()`, so an invalid definition cannot be constructed at all.
 - `RunOptions` gained its `filter` component in Step 13, the Step that introduced `RuleFilter`.
+- Review follow-up: `RunOptions` and `Provenance` are final classes with accessors rather than records, so later minor versions can add settings or provenance data without breaking constructors or record patterns. The HTTP host serializes results through its own `ResultView`/`ProvenanceView`, so the JSON shape does not change. The host also caps `batchSize` at `dq.http.max-batch-size`.

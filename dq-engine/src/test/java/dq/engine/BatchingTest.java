@@ -87,8 +87,27 @@ class BatchingTest {
     void rejectsBatchSizeBelowOne() {
         assertThatThrownBy(() -> RunOptions.builder().batchSize(0).build())
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at least 1");
-        assertThatThrownBy(() -> new RunOptions(-5, dq.engine.api.RuleFilter.all()))
+        assertThatThrownBy(() -> RunOptions.builder().batchSize(-5).build())
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aRunCancelledInsideABatchGetsNoCallbackForThatPartialBatch() {
+        DqEngine interruptingOnR3 = DqEngine.builder().catalog(RuleCatalog.of(TestRules.rule("a", f -> {
+            if (f.require("id").equals("r3")) {
+                Thread.currentThread().interrupt();
+            }
+            return "ok";
+        }).build())).build();
+        var listener = new Recording();
+
+        RunSummary summary = interruptingOnR3.validate(RecordSources.of(records(10)), listener,
+                RunOptions.builder().batchSize(5).build());
+
+        assertThat(summary.status()).isEqualTo(RunStatus.CANCELLED);
+        assertThat(summary.recordsRead()).isEqualTo(4);
+        assertThat(listener.results).isEqualTo(4);
+        assertThat(listener.batches).as("records r0-r3 were delivered, but batch 1 never completed").isEmpty();
     }
 
     @Test

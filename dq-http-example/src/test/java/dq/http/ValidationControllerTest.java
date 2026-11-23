@@ -107,6 +107,19 @@ class ValidationControllerTest {
     }
 
     @Test
+    void aBatchSizeAboveTheCapIs400OnBothEndpoints() throws Exception {
+        mvc.perform(post("/validations?batchSize=10001").contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("at most 10000")));
+        mvc.perform(post("/validations?batchSize=2147483647").contentType(MediaType.APPLICATION_JSON)
+                        .accept(ValidationController.NDJSON).content("[]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid run options"));
+        mvc.perform(post("/validations?batchSize=10000").contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void categoryFilterLowersRulesSelected() throws Exception {
         mvc.perform(post("/validations?category=tax").contentType(MediaType.APPLICATION_JSON).content(fixture()))
                 .andExpect(status().isOk())

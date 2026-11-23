@@ -23,7 +23,7 @@ final class NdjsonListener implements ValidationListener {
 
     @Override
     public void onResult(Result result) {
-        line("result", result);
+        line("result", Views.ResultView.of(result));
     }
 
     @Override
