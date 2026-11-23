@@ -1,0 +1,52 @@
+dq-engine/src/main/java/dq/engine/internal/JsonArrayRecordSource.java
+  s_1850d04bb52991::t_56898ea79fcb43 1-8,12-14,17-20,23-24,28-30,32-38,44,49,55,57,59,65-69,73-75,78-79
+  s_1850d04bb52991::t_4b152a273a0c5e 15,25,27
+  s_cc5f98e1b715d0::t_031d765d65a73e 9-11,16,21-22,26,31,39-43,45-48,50-54,56,58,60-64,70-72,76-77
+dq-engine/src/test/resources/dq/engine/fixture.json
+  s_1850d04bb52991::t_87b2a85a1d7046 1-22
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_cc5f98e1b715d0::t_031d765d65a73e 86-95
+dq-engine/src/main/java/module-info.java
+  s_cc5f98e1b715d0::t_031d765d65a73e 6-7
+gradle/libs.versions.toml
+  s_cc5f98e1b715d0::t_031d765d65a73e 2,7
+dq-engine/build.gradle.kts
+  s_cc5f98e1b715d0::t_031d765d65a73e 13-15
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_cc5f98e1b715d0::t_031d765d65a73e 36
+dq-engine/src/test/java/dq/engine/JsonArraySourceTest.java
+  s_1850d04bb52991::t_570413d656a129 141,150-170
+  s_1850d04bb52991::t_10721848eab2e8 1-140,171-191
+  s_1850d04bb52991::t_24d1628bd85ad4 142-149
+dq-engine/src/main/java/dq/engine/api/RecordSource.java
+  s_cc5f98e1b715d0::t_031d765d65a73e 9
+dq-engine/src/main/java/dq/engine/api/RecordSources.java
+  s_cc5f98e1b715d0::t_031d765d65a73e 3-4,20-27
+  s_cc5f98e1b715d0::t_7226c8269f9f44 28
+dq-engine/src/main/java/dq/engine/api/RecordSourceException.java
+  s_1850d04bb52991::t_8f51f7014146f4 1-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ab43515f7d4f6f10f7f87bd0b8debfc4ecace696",
+  "prompts": {},
+  "sessions": {
+    "s_1850d04bb52991": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4966d2f6-6bbf-4370-af38-a25b223dcc2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    },
+    "s_cc5f98e1b715d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c989da1c-765c-40b5-ab3c-b6e88815115d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
