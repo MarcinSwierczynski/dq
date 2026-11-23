@@ -2,6 +2,7 @@ package dq.engine;
 
 import static dq.engine.TestRules.okRule;
 import static dq.engine.TestRules.rule;
+import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -97,14 +98,14 @@ class ScopeAndSelectionTest {
         RunSummary empty = DqEngine.builder().catalog(Fixture.catalog()).build()
                 .validate(RecordSources.of(List.of()), new CollectingListener());
         assertThat(empty.recordsRead()).isZero();
-        assertThat(empty.resultCount()).isZero();
+        assertThat(resultCount(empty)).isZero();
         assertThat(empty.byDecision()).containsOnlyKeys(Decision.values()).allSatisfy((k, v) -> assertThat(v).isZero());
 
         RunSummary noRules = DqEngine.builder().catalog(RuleCatalog.of()).build()
                 .validate(RecordSources.of(Fixture.RECORDS), new CollectingListener());
         assertThat(noRules.recordsRead()).isEqualTo(3);
         assertThat(noRules.rulesSelected()).isZero();
-        assertThat(noRules.resultCount()).isZero();
+        assertThat(resultCount(noRules)).isZero();
     }
 
     @Test
@@ -116,7 +117,7 @@ class ScopeAndSelectionTest {
                             engine.validate(RecordSources.of(Fixture.RECORDS), new CollectingListener())))
                     .toList();
             for (var future : futures) {
-                assertThat(future.get().resultCount()).isEqualTo(9);
+                assertThat(resultCount(future.get())).isEqualTo(9);
             }
         }
     }

@@ -44,7 +44,7 @@ The engine SHALL stop the run and throw `ValidationRunException` (carrying the p
 
 ### Scenario: Listener throws
 - WHEN the listener throws on the 2nd Result
-- THEN `validate` throws `ValidationRunException` whose partial summary has `resultCount = 1`, because an outcome is counted only after its listener call returns normally
+- THEN `validate` throws `ValidationRunException` whose partial summary counts 1 result in `byDecision`, because an outcome is counted only after its listener call returns normally
 
 ## Requirement: Run summary
 `validate` SHALL return a `RunSummary` with records read, rules selected, result count, error count, a count per `Decision`, a count of findings (`INVALID` and `REVIEW` results) per `Severity` (every enum key present, zeros included), the duration, and a completion status.

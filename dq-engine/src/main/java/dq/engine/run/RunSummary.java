@@ -13,9 +13,8 @@ import java.util.Objects;
  *
  * @param recordsRead   input elements evaluated, including unreadable ones
  * @param rulesSelected RELEASED rules that matched the run's filter
- * @param resultCount   results delivered
  * @param errorCount    evaluation errors delivered
- * @param byDecision    results per decision; every key present
+ * @param byDecision    results per decision; every key present. Their sum is the number of results
  * @param bySeverity    findings ({@link Decision#INVALID} and {@link Decision#REVIEW} results) per their
  *                      rule's severity; {@code VALID} and {@code NOT_APPLICABLE} results are not counted.
  *                      Every key present
@@ -25,7 +24,6 @@ import java.util.Objects;
 public record RunSummary(
         long recordsRead,
         int rulesSelected,
-        long resultCount,
         long errorCount,
         Map<Decision, Long> byDecision,
         Map<Severity, Long> bySeverity,

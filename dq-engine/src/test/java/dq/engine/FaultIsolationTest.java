@@ -1,6 +1,7 @@
 package dq.engine;
 
 import static dq.engine.TestRules.rule;
+import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -47,7 +48,7 @@ class FaultIsolationTest {
         RunSummary summary = run(listener, faulty);
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
-        assertThat(summary.resultCount()).isEqualTo(11);
+        assertThat(resultCount(summary)).isEqualTo(11);
         assertThat(summary.errorCount()).isEqualTo(1);
         assertThat(listener.results().stream().filter(r -> !r.ruleId().equals("faulty"))
                 .collect(java.util.stream.Collectors.toMap(r -> r.recordId() + "/" + r.ruleId(), Result::decision)))
@@ -83,7 +84,7 @@ class FaultIsolationTest {
         var listener = new CollectingListener();
         RunSummary summary = run(listener, rule("odd", f -> "surprise").build());
 
-        assertThat(summary.resultCount()).isEqualTo(9);
+        assertThat(resultCount(summary)).isEqualTo(9);
         assertThat(listener.errors()).hasSize(3).allSatisfy(e -> {
             assertThat(e.kind()).isEqualTo(ErrorKind.UNMAPPED_VALUE);
             assertThat(e.ruleId()).contains("odd");
@@ -126,7 +127,7 @@ class FaultIsolationTest {
         RunSummary summary = run(listener, rule("recursive", f -> recurse(0)).build());
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
-        assertThat(summary.resultCount()).isEqualTo(9);
+        assertThat(resultCount(summary)).isEqualTo(9);
         assertThat(listener.errors()).hasSize(3).allSatisfy(e -> {
             assertThat(e.kind()).isEqualTo(ErrorKind.RULE_EXCEPTION);
             assertThat(e.causeType()).isEqualTo(StackOverflowError.class.getName());
@@ -172,7 +173,7 @@ class FaultIsolationTest {
                 .isInstanceOfSatisfying(ValidationRunException.class, e -> {
                     assertThat(e.getCause()).hasMessage("sink is full");
                     assertThat(e.partialSummary().status()).isEqualTo(RunStatus.ABORTED);
-                    assertThat(e.partialSummary().resultCount()).isEqualTo(1);
+                    assertThat(resultCount(e.partialSummary())).isEqualTo(1);
                     assertThat(e.partialSummary().byDecision()).containsEntry(Decision.NOT_APPLICABLE, 1L);
                 });
         assertThat(delivered).hasSize(1);
