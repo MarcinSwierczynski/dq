@@ -28,20 +28,26 @@ public final class DqEngine {
         return new Builder();
     }
 
+    /** Equivalent to {@code validate(source, listener, RunOptions.defaults())}. */
+    public RunSummary validate(RecordSource source, ValidationListener listener) {
+        return validate(source, listener, RunOptions.defaults());
+    }
+
     /**
-     * Evaluates every RELEASED rule on every record of {@code source}, delivering each outcome to
-     * {@code listener} as soon as it is produced, and closes the source.
+     * Evaluates every RELEASED rule on every record of {@code source}, batch by batch, delivering each
+     * outcome to {@code listener} as soon as it is produced, and closes the source.
      *
      * @return the summary, with status {@link RunStatus#COMPLETED}
      * @throws ValidationRunException if the listener or the source fails; carries the partial summary
      */
-    public RunSummary validate(RecordSource source, ValidationListener listener) {
+    public RunSummary validate(RecordSource source, ValidationListener listener, RunOptions options) {
         Objects.requireNonNull(source, "source");
-        if (listener == null) {
+        if (listener == null || options == null) {
             source.close(); // the source is closed on every path, misuse included
             Objects.requireNonNull(listener, "listener");
+            Objects.requireNonNull(options, "options");
         }
-        return new RunExecution(rules, recordIdField, countryField, source, listener).run();
+        return new RunExecution(rules, recordIdField, countryField, source, listener, options).run();
     }
 
     /** The validated catalog snapshot this engine evaluates, in order. */

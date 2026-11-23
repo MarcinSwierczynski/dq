@@ -13,4 +13,7 @@ public interface ValidationListener {
     void onResult(Result result);
 
     void onError(EvaluationError error);
+
+    /** Called after each batch; a natural flush or commit point. Does nothing by default. */
+    default void onBatchComplete(BatchProgress progress) {}
 }
