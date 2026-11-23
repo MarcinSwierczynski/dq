@@ -66,7 +66,10 @@ public final class RunExecution {
 
     public RunSummary run() {
         try {
-            selected = rules.stream().filter(rule -> rule.status() == RuleStatus.RELEASED).toList();
+            selected = rules.stream()
+                    .filter(rule -> rule.status() == RuleStatus.RELEASED)
+                    .filter(options.filter()::test)
+                    .toList();
             return summary(loop());
         } catch (Abort abort) {
             RunSummary partial = summary(RunStatus.ABORTED);
