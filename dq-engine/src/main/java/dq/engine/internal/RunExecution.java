@@ -1,5 +1,6 @@
 package dq.engine.internal;
 
+import dq.engine.api.BatchProgress;
 import dq.engine.api.Decision;
 import dq.engine.api.DecisionMapping.Resolution;
 import dq.engine.api.ErrorKind;
@@ -10,6 +11,7 @@ import dq.engine.api.RecordSource;
 import dq.engine.api.Result;
 import dq.engine.api.Rule;
 import dq.engine.api.RuleStatus;
+import dq.engine.api.RunOptions;
 import dq.engine.api.RunStatus;
 import dq.engine.api.RunSummary;
 import dq.engine.api.Severity;
@@ -18,6 +20,7 @@ import dq.engine.api.ValidationListener;
 import dq.engine.api.ValidationRunException;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,7 +30,11 @@ import java.util.SequencedMap;
 
 /**
  * State and loop of a single validation run. Created per {@code validate} call and confined to the
- * calling thread. Every outcome is handed to the listener as soon as it is produced.
+ * calling thread.
+ *
+ * <p>Loop: pull up to {@code batchSize} elements into a buffer, evaluate each (record × selected rule)
+ * pair, hand every outcome to the listener immediately, signal {@code onBatchComplete}, drop the buffer.
+ * Live memory is therefore bounded by the batch size, not by the input size.
  */
 public final class RunExecution {
     private static final System.Logger LOG = System.getLogger("dq.engine");
@@ -37,6 +44,7 @@ public final class RunExecution {
     private final String countryField;
     private final RecordSource source;
     private final ValidationListener listener;
+    private final RunOptions options;
 
     private final long startNanos = System.nanoTime();
     private final EnumMap<Decision, Long> byDecision = new EnumMap<>(Decision.class);
@@ -47,12 +55,13 @@ public final class RunExecution {
     private long errorCount;
 
     public RunExecution(List<Rule> rules, String recordIdField, String countryField, RecordSource source,
-            ValidationListener listener) {
+            ValidationListener listener, RunOptions options) {
         this.rules = rules;
         this.recordIdField = recordIdField;
         this.countryField = countryField;
         this.source = source;
         this.listener = listener;
+        this.options = options;
     }
 
     public RunSummary run() {
@@ -81,19 +90,42 @@ public final class RunExecution {
     }
 
     private RunStatus loop() {
-        while (true) {
-            SourceElement element;
-            try {
-                element = source.next();
-            } catch (RuntimeException e) {
-                throw new Abort("record source failed after " + recordsRead + " records: " + e.getMessage(), e);
+        int batchSize = options.batchSize();
+        long batchNumber = 0;
+        boolean exhausted = false;
+        while (!exhausted) {
+            List<SourceElement> batch = new ArrayList<>(Math.min(batchSize, 4096));
+            RuntimeException sourceFailure = null;
+            while (batch.size() < batchSize) {
+                SourceElement element;
+                try {
+                    element = source.next();
+                } catch (RuntimeException e) {
+                    sourceFailure = e;
+                    break;
+                }
+                if (element == null) {
+                    exhausted = true;
+                    break;
+                }
+                batch.add(element);
             }
-            if (element == null) {
-                return RunStatus.COMPLETED;
+            // Records buffered before a source failure are still evaluated and delivered.
+            for (SourceElement element : batch) {
+                evaluate(element, recordsRead);
+                recordsRead++;
             }
-            evaluate(element, recordsRead);
-            recordsRead++;
+            if (sourceFailure != null) {
+                throw new Abort("record source failed after " + recordsRead + " records: "
+                        + sourceFailure.getMessage(), sourceFailure);
+            }
+            if (!batch.isEmpty()) {
+                batchNumber++;
+                var progress = new BatchProgress(batchNumber, batch.size(), recordsRead);
+                deliver(() -> listener.onBatchComplete(progress));
+            }
         }
+        return RunStatus.COMPLETED;
     }
 
     private void evaluate(SourceElement element, long index) {
