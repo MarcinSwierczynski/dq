@@ -3,15 +3,15 @@ package dq.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.Decision;
-import dq.engine.api.DecisionMapping;
-import dq.engine.api.DqEngine;
-import dq.engine.api.InvalidCatalogException;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.Severity;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.DecisionMapping;
+import dq.engine.catalog.InvalidCatalogException;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleCatalog;
+import dq.engine.catalog.RuleStatus;
+import dq.engine.catalog.Severity;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.DqEngine;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -84,7 +84,7 @@ class RuleCatalogTest {
     @Test
     void defaultsScopeToWorldAndCategoriesToNone() {
         Rule rule = valid().build();
-        assertThat(rule.scope()).isEqualTo(dq.engine.api.CountryScope.world());
+        assertThat(rule.scope()).isEqualTo(dq.engine.catalog.CountryScope.world());
         assertThat(rule.categories()).isEmpty();
     }
 }

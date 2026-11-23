@@ -1,11 +1,11 @@
 package dq.engine;
 
-import dq.engine.api.Decision;
-import dq.engine.api.DecisionMapping;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleLogic;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.Severity;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.DecisionMapping;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleLogic;
+import dq.engine.catalog.RuleStatus;
+import dq.engine.catalog.Severity;
 
 /** Small rule factories for tests. */
 final class TestRules {

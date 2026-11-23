@@ -4,17 +4,17 @@ import static dq.engine.TestRules.okRule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.BatchProgress;
-import dq.engine.api.DqEngine;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.RecordSources;
-import dq.engine.api.Result;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RunOptions;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
-import dq.engine.api.ValidationListener;
+import dq.engine.catalog.RuleCatalog;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.BatchProgress;
+import dq.engine.run.DqEngine;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Result;
+import dq.engine.run.RunOptions;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.run.ValidationListener;
+import dq.engine.source.RecordSources;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +128,7 @@ class BatchingTest {
     void cancellationDoesNotConsumeTheNextBatchFromTheSource() {
         var pulled = new java.util.concurrent.atomic.AtomicInteger();
         var delegate = RecordSources.of(records(250));
-        dq.engine.api.RecordSource counting = () -> {
+        dq.engine.source.RecordSource counting = () -> {
             var element = delegate.next();
             if (element != null) {
                 pulled.incrementAndGet();

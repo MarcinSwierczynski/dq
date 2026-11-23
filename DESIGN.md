@@ -13,8 +13,11 @@ RecordSource ──► DqEngine.validate ──► per record × selected rule:
 
 ## 1. Public API, and why it has this shape
 
-The exported package is `dq.engine.api`, and `module-info.java` exports only that package.
-`dq.engine.internal` holds the loop, the JSON parsing, and the field tracking.
+Code is grouped by feature, and `module-info.java` exports the three feature packages:
+`dq.engine.catalog` (rules, mappings, scopes, filters), `dq.engine.source` (record input) and
+`dq.engine.run` (the engine, listeners, results and errors). The loop, the JSON parsing, and the field
+tracking sit package-private next to the API they implement (`RunExecution` and `TrackingFieldReader`
+in `run`, `JsonArrayRecordSource` in `source`), so they are not part of the API.
 
 | Type | Role |
 |---|---|
@@ -68,7 +71,7 @@ Why this shape:
 
 ### Semver policy
 
-The API is `dq.engine.api` only. Breaking changes need a major version. These count as additive, so a
+The API is the public types of the exported packages. Breaking changes need a major version. These count as additive, so a
 minor version may:
 
 - add a constant to `ErrorKind` (documented as open: switch over it with a `default` branch);
@@ -81,8 +84,8 @@ classes with accessors: `RunOptions` (built through its builder; new settings ge
 and a default) and `Provenance`, which already grew this way: `explanation()` was added with a new
 constructor overload, and the old constructor still works. `RunSummary` stays a record and shipped
 in its full shape from the start. `Rule` is a record that gained its `explainer` component before the
-first release; after 0.1.0, new rule metadata needs the same treatment. `dq.engine.internal` may change in any release,
-and the module system enforces that boundary.
+first release; after 0.1.0, new rule metadata needs the same treatment. Package-private implementation classes may change in any release,
+and Java access control enforces that boundary.
 
 ## 2. Fault isolation (F3)
 

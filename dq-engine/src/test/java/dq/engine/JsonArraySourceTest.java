@@ -3,18 +3,18 @@ package dq.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.CollectingListener;
-import dq.engine.api.DqEngine;
-import dq.engine.api.ErrorKind;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.RecordSource;
-import dq.engine.api.RecordSourceException;
-import dq.engine.api.RecordSources;
-import dq.engine.api.Result;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
-import dq.engine.api.ValidationRunException;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.CollectingListener;
+import dq.engine.run.DqEngine;
+import dq.engine.run.ErrorKind;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Result;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.run.ValidationRunException;
+import dq.engine.source.RecordSource;
+import dq.engine.source.RecordSourceException;
+import dq.engine.source.RecordSources;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -158,7 +158,7 @@ class JsonArraySourceTest {
         var closed = new boolean[1];
         RecordSource failing = new RecordSource() {
             @Override
-            public dq.engine.api.SourceElement next() {
+            public dq.engine.source.SourceElement next() {
                 throw new IllegalStateException("cursor lost");
             }
 
@@ -176,9 +176,9 @@ class JsonArraySourceTest {
 
     @Test
     void aFailingCloseDoesNotHideTheMisuse() {
-        dq.engine.api.RecordSource failingClose = new dq.engine.api.RecordSource() {
+        dq.engine.source.RecordSource failingClose = new dq.engine.source.RecordSource() {
             @Override
-            public dq.engine.api.SourceElement next() {
+            public dq.engine.source.SourceElement next() {
                 return null;
             }
 
@@ -208,7 +208,7 @@ class JsonArraySourceTest {
             private final RecordSource delegate = RecordSources.of(Fixture.RECORDS);
 
             @Override
-            public dq.engine.api.SourceElement next() {
+            public dq.engine.source.SourceElement next() {
                 return delegate.next();
             }
 

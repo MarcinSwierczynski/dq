@@ -1,13 +1,13 @@
 package dq.http;
 
-import dq.engine.api.DqEngine;
-import dq.engine.api.RecordSourceException;
-import dq.engine.api.RecordSources;
-import dq.engine.api.RuleFilter;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.RunOptions;
-import dq.engine.api.RunSummary;
-import dq.engine.api.ValidationRunException;
+import dq.engine.catalog.RuleFilter;
+import dq.engine.catalog.RuleStatus;
+import dq.engine.run.DqEngine;
+import dq.engine.run.RunOptions;
+import dq.engine.run.RunSummary;
+import dq.engine.run.ValidationRunException;
+import dq.engine.source.RecordSourceException;
+import dq.engine.source.RecordSources;
 import dq.http.Views.RecordView;
 import dq.http.Views.SummaryView;
 import dq.http.Views.ValidationResponse;

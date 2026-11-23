@@ -1,11 +1,11 @@
 package dq.http;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import dq.engine.api.Decision;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.Result;
-import dq.engine.api.RunSummary;
-import dq.engine.api.Severity;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.Severity;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Result;
+import dq.engine.run.RunSummary;
 import java.util.List;
 import java.util.Map;
 

@@ -1,14 +1,14 @@
 package dq.engine;
 
-import static dq.engine.api.Decision.INVALID;
-import static dq.engine.api.Decision.NOT_APPLICABLE;
-import static dq.engine.api.Decision.VALID;
+import static dq.engine.catalog.Decision.INVALID;
+import static dq.engine.catalog.Decision.NOT_APPLICABLE;
+import static dq.engine.catalog.Decision.VALID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.DecisionMapping;
-import dq.engine.api.DecisionMapping.Resolution;
-import dq.engine.api.InvalidCatalogException;
+import dq.engine.catalog.DecisionMapping;
+import dq.engine.catalog.DecisionMapping.Resolution;
+import dq.engine.catalog.InvalidCatalogException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -64,7 +64,7 @@ class DecisionMappingTest {
 
     @Test
     void isImmutableAndKeepsDeclarationOrder() {
-        var source = new java.util.LinkedHashMap<String, dq.engine.api.Decision>();
+        var source = new java.util.LinkedHashMap<String, dq.engine.catalog.Decision>();
         source.put("b", INVALID);
         source.put("a", VALID);
         DecisionMapping mapping = new DecisionMapping(source, Optional.empty());

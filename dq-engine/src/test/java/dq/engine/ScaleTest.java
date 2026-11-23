@@ -2,13 +2,13 @@ package dq.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dq.engine.api.CountingListener;
-import dq.engine.api.DqEngine;
-import dq.engine.api.RecordSources;
-import dq.engine.api.RunOptions;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.CountingListener;
+import dq.engine.run.DqEngine;
+import dq.engine.run.RunOptions;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.source.RecordSources;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Tag;
