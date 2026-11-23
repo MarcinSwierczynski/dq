@@ -34,7 +34,7 @@ public final class DqEngine {
     }
 
     /**
-     * Evaluates every RELEASED rule on every record of {@code source}, batch by batch, delivering each
+     * Evaluates every selected rule on every record of {@code source}, batch by batch, delivering each
      * outcome to {@code listener} as soon as it is produced, and closes the source.
      *
      * @return the summary, with status {@link RunStatus#COMPLETED}

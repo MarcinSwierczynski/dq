@@ -80,7 +80,7 @@ class BatchingTest {
     void rejectsBatchSizeBelowOne() {
         assertThatThrownBy(() -> RunOptions.builder().batchSize(0).build())
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at least 1");
-        assertThatThrownBy(() -> new RunOptions(-5))
+        assertThatThrownBy(() -> new RunOptions(-5, dq.engine.api.RuleFilter.all()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }
