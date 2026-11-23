@@ -1,15 +1,15 @@
 package dq.http;
 
-import static dq.engine.api.Decision.INVALID;
-import static dq.engine.api.Decision.NOT_APPLICABLE;
-import static dq.engine.api.Decision.VALID;
+import static dq.engine.catalog.Decision.INVALID;
+import static dq.engine.catalog.Decision.NOT_APPLICABLE;
+import static dq.engine.catalog.Decision.VALID;
 
-import dq.engine.api.DecisionMapping;
-import dq.engine.api.DqEngine;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.Severity;
+import dq.engine.catalog.DecisionMapping;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleCatalog;
+import dq.engine.catalog.RuleStatus;
+import dq.engine.catalog.Severity;
+import dq.engine.run.DqEngine;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

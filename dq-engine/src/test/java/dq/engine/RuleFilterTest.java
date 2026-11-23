@@ -1,26 +1,26 @@
 package dq.engine;
 
 import static dq.engine.TestRules.rule;
-import static dq.engine.api.RuleFilter.category;
-import static dq.engine.api.RuleFilter.countryScope;
-import static dq.engine.api.RuleFilter.not;
-import static dq.engine.api.RuleFilter.status;
+import static dq.engine.catalog.RuleFilter.category;
+import static dq.engine.catalog.RuleFilter.countryScope;
+import static dq.engine.catalog.RuleFilter.not;
+import static dq.engine.catalog.RuleFilter.status;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.CollectingListener;
-import dq.engine.api.CountryScope;
-import dq.engine.api.DqEngine;
-import dq.engine.api.RecordSources;
-import dq.engine.api.Result;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RuleFilter;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.RunOptions;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
+import dq.engine.catalog.CountryScope;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleCatalog;
+import dq.engine.catalog.RuleFilter;
+import dq.engine.catalog.RuleStatus;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.CollectingListener;
+import dq.engine.run.DqEngine;
+import dq.engine.run.Result;
+import dq.engine.run.RunOptions;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.source.RecordSources;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -87,9 +87,9 @@ class RuleFilterTest {
     @Test
     void aThrowingFilterPropagatesUnchangedBeforeAnyRecordAndTheSourceIsClosed() {
         var closed = new java.util.concurrent.atomic.AtomicBoolean();
-        dq.engine.api.RecordSource source = new dq.engine.api.RecordSource() {
+        dq.engine.source.RecordSource source = new dq.engine.source.RecordSource() {
             @Override
-            public dq.engine.api.SourceElement next() {
+            public dq.engine.source.SourceElement next() {
                 throw new AssertionError("no record may be pulled when rule selection fails");
             }
 

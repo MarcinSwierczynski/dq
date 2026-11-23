@@ -5,20 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import dq.engine.api.CollectingListener;
-import dq.engine.api.Decision;
-import dq.engine.api.DqEngine;
-import dq.engine.api.ErrorKind;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.RecordSources;
-import dq.engine.api.Result;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
-import dq.engine.api.ValidationListener;
-import dq.engine.api.ValidationRunException;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleCatalog;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.CollectingListener;
+import dq.engine.run.DqEngine;
+import dq.engine.run.ErrorKind;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Result;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.run.ValidationListener;
+import dq.engine.run.ValidationRunException;
+import dq.engine.source.RecordSources;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -224,8 +224,8 @@ class FaultIsolationTest {
     void outcomeTypesNameAMissingFieldsReadMap() {
         assertThatThrownBy(() -> new EvaluationError(Optional.of("r"), "id", 0, ErrorKind.NULL_VALUE, "m", null,
                 null, null)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
-        assertThatThrownBy(() -> new dq.engine.api.Provenance("r", "l", "id", 0, null, "v",
-                dq.engine.api.Provenance.Basis.MAPPED)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
+        assertThatThrownBy(() -> new dq.engine.run.Provenance("r", "l", "id", 0, null, "v",
+                dq.engine.run.Provenance.Basis.MAPPED)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
     }
 
     private static String recurse(int depth) {

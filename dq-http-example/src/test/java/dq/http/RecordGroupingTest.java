@@ -2,13 +2,13 @@ package dq.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dq.engine.api.BatchProgress;
-import dq.engine.api.Decision;
-import dq.engine.api.ErrorKind;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.Provenance;
-import dq.engine.api.Result;
-import dq.engine.api.Severity;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.Severity;
+import dq.engine.run.BatchProgress;
+import dq.engine.run.ErrorKind;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Provenance;
+import dq.engine.run.Result;
 import dq.http.Views.RecordView;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

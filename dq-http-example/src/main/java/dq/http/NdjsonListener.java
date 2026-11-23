@@ -1,9 +1,9 @@
 package dq.http;
 
-import dq.engine.api.BatchProgress;
-import dq.engine.api.EvaluationError;
-import dq.engine.api.Result;
-import dq.engine.api.ValidationListener;
+import dq.engine.run.BatchProgress;
+import dq.engine.run.EvaluationError;
+import dq.engine.run.Result;
+import dq.engine.run.ValidationListener;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

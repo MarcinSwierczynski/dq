@@ -1,14 +1,14 @@
 package dq.engine.fixtures;
 
-import static dq.engine.api.Decision.INVALID;
-import static dq.engine.api.Decision.NOT_APPLICABLE;
-import static dq.engine.api.Decision.VALID;
+import static dq.engine.catalog.Decision.INVALID;
+import static dq.engine.catalog.Decision.NOT_APPLICABLE;
+import static dq.engine.catalog.Decision.VALID;
 
-import dq.engine.api.DecisionMapping;
-import dq.engine.api.Rule;
-import dq.engine.api.RuleCatalog;
-import dq.engine.api.RuleStatus;
-import dq.engine.api.Severity;
+import dq.engine.catalog.DecisionMapping;
+import dq.engine.catalog.Rule;
+import dq.engine.catalog.RuleCatalog;
+import dq.engine.catalog.RuleStatus;
+import dq.engine.catalog.Severity;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +65,7 @@ public final class Fixture {
             record("id", "r3", "country", "ZZ", "legalName", "Nowhere Ltd", "iban", ""));
 
     /** Expected decisions, keyed "record/rule". */
-    public static final Map<String, dq.engine.api.Decision> EXPECTED = Map.of(
+    public static final Map<String, dq.engine.catalog.Decision> EXPECTED = Map.of(
             "r1/countryBlocked", NOT_APPLICABLE, "r1/vatFormat", VALID, "r1/ibanFormat", VALID,
             "r2/countryBlocked", NOT_APPLICABLE, "r2/vatFormat", INVALID, "r2/ibanFormat", VALID,
             "r3/countryBlocked", INVALID, "r3/vatFormat", INVALID, "r3/ibanFormat", INVALID);

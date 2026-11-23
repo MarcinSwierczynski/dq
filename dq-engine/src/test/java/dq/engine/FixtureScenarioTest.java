@@ -2,16 +2,16 @@ package dq.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dq.engine.api.CollectingListener;
-import dq.engine.api.Decision;
-import dq.engine.api.DqEngine;
-import dq.engine.api.Provenance.Basis;
-import dq.engine.api.RecordSources;
-import dq.engine.api.Result;
-import dq.engine.api.RunStatus;
-import dq.engine.api.RunSummary;
-import dq.engine.api.Severity;
+import dq.engine.catalog.Decision;
+import dq.engine.catalog.Severity;
 import dq.engine.fixtures.Fixture;
+import dq.engine.run.CollectingListener;
+import dq.engine.run.DqEngine;
+import dq.engine.run.Provenance.Basis;
+import dq.engine.run.Result;
+import dq.engine.run.RunStatus;
+import dq.engine.run.RunSummary;
+import dq.engine.source.RecordSources;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;

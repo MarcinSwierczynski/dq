@@ -3,7 +3,7 @@ package dq.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dq.engine.api.CountryScope;
+import dq.engine.catalog.CountryScope;
 import org.junit.jupiter.api.Test;
 
 class CountryScopeTest {

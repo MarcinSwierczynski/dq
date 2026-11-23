@@ -1,7 +1,7 @@
 package dq.http;
 
-import dq.engine.api.RecordSource;
-import dq.engine.api.SourceElement;
+import dq.engine.source.RecordSource;
+import dq.engine.source.SourceElement;
 
 /** Decorates a source so that a buffered (non-streaming) response cannot grow without bound. */
 final class RecordLimit implements RecordSource {
