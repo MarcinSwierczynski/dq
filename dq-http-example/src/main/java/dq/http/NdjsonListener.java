@@ -11,10 +11,14 @@ import java.io.UncheckedIOException;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-/** Writes one JSON line per outcome and flushes the socket after every batch. */
+/**
+ * Writes one {@code {"type":"record",…}} line per input record (see {@link RecordGrouping}) and flushes
+ * the socket after every batch. Call {@link #finish()} when the run ends, before the trailer line.
+ */
 final class NdjsonListener implements ValidationListener {
     private final OutputStream out;
     private final JsonMapper json;
+    private final RecordGrouping grouping = new RecordGrouping(record -> line("record", record));
 
     NdjsonListener(OutputStream out, JsonMapper json) {
         this.out = new BufferedOutputStream(out, 64 * 1024);
@@ -23,17 +27,23 @@ final class NdjsonListener implements ValidationListener {
 
     @Override
     public void onResult(Result result) {
-        line("result", Views.ResultView.of(result));
+        grouping.onResult(result);
     }
 
     @Override
     public void onError(EvaluationError error) {
-        line("error", Views.ErrorView.of(error));
+        grouping.onError(error);
     }
 
     @Override
     public void onBatchComplete(BatchProgress progress) {
+        grouping.onBatchComplete(progress);
         flush();
+    }
+
+    /** Writes the last, possibly partial, record of the run. */
+    void finish() {
+        grouping.flush();
     }
 
     /** Writes {@code {"type": type, ...fields of payload}} followed by a newline. */

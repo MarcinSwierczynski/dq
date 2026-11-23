@@ -1,6 +1,5 @@
 package dq.http;
 
-import dq.engine.api.CollectingListener;
 import dq.engine.api.DqEngine;
 import dq.engine.api.RecordSourceException;
 import dq.engine.api.RecordSources;
@@ -9,11 +8,11 @@ import dq.engine.api.RuleStatus;
 import dq.engine.api.RunOptions;
 import dq.engine.api.RunSummary;
 import dq.engine.api.ValidationRunException;
-import dq.http.Views.ErrorView;
-import dq.http.Views.ResultView;
+import dq.http.Views.RecordView;
 import dq.http.Views.SummaryView;
 import dq.http.Views.ValidationResponse;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +31,10 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * {@code POST /validations} with a JSON array body.
  * <ul>
- *   <li>{@code Accept: application/json} — buffered {@code {summary, results, errors}}; capped at
+ *   <li>{@code Accept: application/json} — buffered {@code {summary, records}}, one entry per input
+ *       record with its results keyed by rule id and its errors; capped at
  *       {@code dq.http.max-records} (413 beyond).</li>
- *   <li>{@code Accept: application/x-ndjson} — streamed, one line per outcome, then a {@code summary}
+ *   <li>{@code Accept: application/x-ndjson} — streamed, one {@code record} line per input record, then a {@code summary}
  *       line (or an {@code aborted} line); no record limit, bounded memory.</li>
  * </ul>
  * Optional query parameters {@code status}, {@code country}, {@code category} (repeatable; OR within a
@@ -66,10 +66,11 @@ class ValidationController {
             @RequestParam(required = false) List<String> category,
             @RequestParam(required = false) Integer batchSize) {
         RunOptions options = options(status, country, category, batchSize);
-        var listener = new CollectingListener();
+        var records = new ArrayList<RecordView>();
+        var grouping = new RecordGrouping(records::add);
         RunSummary summary;
         try {
-            summary = engine.validate(new RecordLimit(RecordSources.jsonArray(body), maxRecords), listener, options);
+            summary = engine.validate(new RecordLimit(RecordSources.jsonArray(body), maxRecords), grouping, options);
         } catch (ValidationRunException e) {
             throw switch (e.getCause()) {
                 case RecordLimit.Exceeded tooMany -> problem(HttpStatus.valueOf(413), "Too many records",
@@ -80,9 +81,8 @@ class ValidationController {
                 case null, default -> e;
             };
         }
-        return new ValidationResponse(SummaryView.of(summary),
-                listener.results().stream().map(ResultView::of).toList(),
-                listener.errors().stream().map(ErrorView::of).toList());
+        grouping.flush();
+        return new ValidationResponse(SummaryView.of(summary), records);
     }
 
     @PostMapping(path = "/validations", consumes = MediaType.APPLICATION_JSON_VALUE, produces = NDJSON)
@@ -96,6 +96,7 @@ class ValidationController {
             var writer = new NdjsonListener(out, json);
             try {
                 RunSummary summary = engine.validate(RecordSources.jsonArray(body), writer, options);
+                writer.finish();
                 writer.line("summary", SummaryView.of(summary));
             } catch (ValidationRunException e) {
                 // The 200 status is already on the wire; the trailer line tells the client the run failed.
@@ -103,6 +104,7 @@ class ValidationController {
                 aborted.put("reason", e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
                 aborted.put("summary", SummaryView.of(e.partialSummary()));
                 try {
+                    writer.finish(); // outcomes delivered before the failure still reach the client
                     writer.line("aborted", aborted);
                     writer.flush();
                 } catch (java.io.UncheckedIOException clientGone) {

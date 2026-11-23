@@ -40,6 +40,7 @@ class ScopeAndSelectionTest {
         assertThat(r2.provenance().basis()).isEqualTo(Provenance.Basis.OUT_OF_SCOPE);
         assertThat(r2.provenance().computedValue()).isNull();
         assertThat(r2.provenance().fieldsRead()).containsExactly(Map.entry("country", "FR"));
+        assertThat(r2.provenance().explanation()).contains("applies to DE only; record country is FR");
         assertThat(listener.results().getFirst().decision()).isEqualTo(Decision.VALID);
     }
 
@@ -54,6 +55,8 @@ class ScopeAndSelectionTest {
                 .containsExactly(Provenance.Basis.OUT_OF_SCOPE, Provenance.Basis.MAPPED);
         assertThat(listener.results().getFirst().provenance().fieldsRead())
                 .containsExactly(Map.entry("country", Provenance.ABSENT));
+        assertThat(listener.results().getFirst().provenance().explanation())
+                .contains("applies to DE only; record has no country");
     }
 
     @Test

@@ -153,7 +153,7 @@ public final class RunExecution {
                         read.put(countryField, fields.containsKey(countryField) ? country : Provenance.ABSENT);
                         emit(new Result(rule.id(), recordId, Decision.NOT_APPLICABLE, rule.severity(),
                                 new Provenance(rule.id(), rule.label(), recordId, index, read, null,
-                                        Basis.OUT_OF_SCOPE)));
+                                        Basis.OUT_OF_SCOPE, outOfScope(rule, fields, country))));
                     }
                 }
             }
@@ -171,29 +171,63 @@ public final class RunExecution {
             return;
         } catch (StackOverflowError e) {
             // Checked before VirtualMachineError: the stack has unwound, so it is safe to continue.
-            emit(ruleException(rule, recordId, index, e, reader));
+            emit(ruleException(rule, recordId, index, "rule logic threw: ", e, reader));
             return;
         } catch (Exception | LinkageError e) {
-            if (e instanceof InterruptedException) {
-                // Keep the cancellation request visible to the loop's between-record check.
-                Thread.currentThread().interrupt();
-            }
-            emit(ruleException(rule, recordId, index, e, reader));
+            keepInterrupt(e);
+            emit(ruleException(rule, recordId, index, "rule logic threw: ", e, reader));
             return;
         }
         if (value == null) {
             emit(error(rule, recordId, index, ErrorKind.NULL_VALUE, "rule logic returned null", null, reader));
             return;
         }
-        Resolution resolution = rule.mapping().resolve(value);
-        switch (resolution) {
-            case Resolution.Mapped(Decision decision) ->
-                    emit(result(rule, recordId, index, decision, value, Basis.MAPPED, reader));
-            case Resolution.Defaulted(Decision decision) ->
-                    emit(result(rule, recordId, index, decision, value, Basis.DEFAULT, reader));
-            case Resolution.Unmapped() -> emit(error(rule, recordId, index, ErrorKind.UNMAPPED_VALUE,
-                    "computed value '" + value + "' is not mapped and the mapping has no default", null, reader));
+        Decision decision;
+        Basis basis;
+        switch (rule.mapping().resolve(value)) {
+            case Resolution.Mapped(Decision d) -> { decision = d; basis = Basis.MAPPED; }
+            case Resolution.Defaulted(Decision d) -> { decision = d; basis = Basis.DEFAULT; }
+            case Resolution.Unmapped() -> {
+                emit(error(rule, recordId, index, ErrorKind.UNMAPPED_VALUE,
+                        "computed value '" + value + "' is not mapped and the mapping has no default", null, reader));
+                return;
+            }
         }
+        // The explainer is rule code too, so it sits inside the same isolation boundary. It runs after
+        // the decision is fixed and sees only the evidence, so it cannot change the outcome.
+        String explanation;
+        try {
+            explanation = rule.explainer().explain(new RecordedEvidence(reader.fieldsRead(), value));
+        } catch (StackOverflowError e) {
+            emit(ruleException(rule, recordId, index, "rule explanation threw: ", e, reader));
+            return;
+        } catch (Exception | LinkageError e) {
+            keepInterrupt(e);
+            emit(ruleException(rule, recordId, index, "rule explanation threw: ", e, reader));
+            return;
+        }
+        emit(new Result(rule.id(), recordId, decision, rule.severity(), new Provenance(rule.id(), rule.label(),
+                recordId, index, reader.fieldsRead(), value, basis, explanation)));
+    }
+
+    /** INVALID and REVIEW are findings; VALID and NOT_APPLICABLE are not, so they carry no severity weight. */
+    private static boolean isFinding(Decision decision) {
+        return decision == Decision.INVALID || decision == Decision.REVIEW;
+    }
+
+    /** Keeps a cancellation request visible to the loop's between-record check. */
+    private static void keepInterrupt(Throwable e) {
+        if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /** The engine's own reason for {@link Basis#OUT_OF_SCOPE}: the rule's logic never ran. */
+    private String outOfScope(Rule rule, Map<String, ?> fields, Object country) {
+        String recordCountry = !fields.containsKey(countryField) || country == null ? "record has no " + countryField
+                : country instanceof String s ? "record " + countryField + " is " + s
+                : "record " + countryField + " is not text";
+        return "applies to " + rule.scope() + " only; " + recordCountry;
     }
 
     private String recordId(Map<String, ?> fields, long index) {
@@ -207,16 +241,10 @@ public final class RunExecution {
         return "#" + index;
     }
 
-    private static Result result(Rule rule, String recordId, long index, Decision decision, String value,
-            Basis basis, TrackingFieldReader reader) {
-        return new Result(rule.id(), recordId, decision, rule.severity(),
-                new Provenance(rule.id(), rule.label(), recordId, index, reader.fieldsRead(), value, basis));
-    }
-
-    private static EvaluationError ruleException(Rule rule, String recordId, long index, Throwable e,
-            TrackingFieldReader reader) {
+    private static EvaluationError ruleException(Rule rule, String recordId, long index, String prefix,
+            Throwable e, TrackingFieldReader reader) {
         String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-        return error(rule, recordId, index, ErrorKind.RULE_EXCEPTION, "rule logic threw: " + message, e, reader);
+        return error(rule, recordId, index, ErrorKind.RULE_EXCEPTION, prefix + message, e, reader);
     }
 
     private static EvaluationError error(Rule rule, String recordId, long index, ErrorKind kind, String message,
@@ -229,7 +257,9 @@ public final class RunExecution {
         deliver(() -> listener.onResult(result));
         resultCount++;
         byDecision.merge(result.decision(), 1L, Long::sum);
-        bySeverity.merge(result.severity(), 1L, Long::sum);
+        if (isFinding(result.decision())) {
+            bySeverity.merge(result.severity(), 1L, Long::sum);
+        }
     }
 
     private void emit(EvaluationError error) {

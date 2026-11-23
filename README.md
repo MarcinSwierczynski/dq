@@ -37,6 +37,9 @@ A rule is logic that computes a value plus a decision mapping held as data:
 Rule vatFormat = Rule.builder()
         .id("vatFormat").label("VAT id has a plausible length")
         .logic(f -> f.text("vatId").filter(v -> v.length() >= 9).map(v -> "ok").orElse("bad"))
+        .explain(e -> e.text("vatId")                      // optional: the reason, in plain words
+                .map(v -> v.length() >= 9 ? "len " + v.length() : "len " + v.length() + " instead of 9")
+                .orElse("no vatId"))
         .mapping(DecisionMapping.builder().when("ok", VALID).when("bad", INVALID).build())
         .status(RuleStatus.RELEASED).severity(Severity.ERROR).category("tax")
         .build();
@@ -48,7 +51,14 @@ Rule vatFormat = Rule.builder()
 ./gradlew :dq-http-example:bootRun          # listens on :8080
 ```
 
-The §5 fixture (9 results):
+The §5 fixture (9 results). The response has one entry per record, with results keyed by rule id:
+`records[1].results.vatFormat` is `{"decision": "INVALID", "severity": "ERROR", "provenance": "len 4 instead of 9"}`:
+
+| record | countryBlocked | vatFormat | ibanFormat |
+|---|---|---|---|
+| r1 | NOT_APPLICABLE (country DE is not blocked) | VALID (len 11) | VALID (iban starts with DE) |
+| r2 | NOT_APPLICABLE (country FR is not blocked) | INVALID (len 4 instead of 9) | VALID (iban starts with FR) |
+| r3 | INVALID (country ZZ is blocked) | INVALID (no vatId) | INVALID (empty iban) |
 
 ```sh
 curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' \
@@ -68,7 +78,8 @@ curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' -
   42]'
 ```
 
-Streaming (no record limit, one JSON line per outcome, then a `summary` line), with rule selection:
+Streaming (no record limit, one `{"type":"record",…}` line per record, then a `summary` line), with
+rule selection:
 
 ```sh
 curl -s -N -X POST 'localhost:8080/validations?category=tax&country=DE&batchSize=500' \

@@ -17,6 +17,8 @@ import java.util.Set;
  * @param severity   copied onto every result of this rule
  * @param scope      countries the rule applies to; {@link CountryScope#world()} by default
  * @param categories zero or more free-form categories used for selection
+ * @param explainer  turns what the logic read and computed into a reason; {@link RuleExplainer#none()}
+ *                   by default
  */
 public record Rule(
         String id,
@@ -26,7 +28,8 @@ public record Rule(
         RuleStatus status,
         Severity severity,
         CountryScope scope,
-        Set<String> categories) {
+        Set<String> categories,
+        RuleExplainer explainer) {
 
     /** @throws InvalidCatalogException if a required component is missing or blank */
     public Rule {
@@ -50,6 +53,7 @@ public record Rule(
             copy.add(category);
         }
         categories = Collections.unmodifiableSequencedSet(copy);
+        explainer = explainer == null ? RuleExplainer.none() : explainer;
     }
 
     private static void requirePresent(String id, Object value, String what) {
@@ -72,6 +76,7 @@ public record Rule(
         private Severity severity;
         private CountryScope scope = CountryScope.world();
         private final Set<String> categories = new LinkedHashSet<>();
+        private RuleExplainer explainer = RuleExplainer.none();
 
         private Builder() {}
 
@@ -89,6 +94,9 @@ public record Rule(
 
         public Builder scope(CountryScope scope) { this.scope = scope; return this; }
 
+        /** Optional: a short reason for each result, e.g. {@code "len 4 instead of 9"}. */
+        public Builder explain(RuleExplainer explainer) { this.explainer = explainer; return this; }
+
         public Builder category(String category) { this.categories.add(category); return this; }
 
         public Builder categories(Set<String> categories) {
@@ -99,7 +107,7 @@ public record Rule(
 
         /** @throws InvalidCatalogException if a required component is missing or blank */
         public Rule build() {
-            return new Rule(id, label, logic, mapping, status, severity, scope, categories);
+            return new Rule(id, label, logic, mapping, status, severity, scope, categories, explainer);
         }
     }
 }

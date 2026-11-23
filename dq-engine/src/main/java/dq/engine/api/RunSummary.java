@@ -14,7 +14,9 @@ import java.util.Objects;
  * @param resultCount   results delivered
  * @param errorCount    evaluation errors delivered
  * @param byDecision    results per decision; every key present
- * @param bySeverity    results per severity; every key present
+ * @param bySeverity    findings ({@link Decision#INVALID} and {@link Decision#REVIEW} results) per their
+ *                      rule's severity; {@code VALID} and {@code NOT_APPLICABLE} results are not counted.
+ *                      Every key present
  * @param duration      wall-clock time of the run
  * @param status        how the run ended
  */

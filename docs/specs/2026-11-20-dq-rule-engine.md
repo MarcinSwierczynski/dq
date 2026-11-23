@@ -104,11 +104,11 @@ The engine SHALL stop the run and throw `ValidationRunException` (carrying the p
 - THEN `validate` throws `ValidationRunException` whose partial summary has `resultCount = 1`, because an outcome is counted only after its listener call returns normally
 
 #### ADDED Requirement: Run summary
-`validate` SHALL return a `RunSummary` with records read, rules selected, result count, error count, a count per `Decision` and per `Severity` (every enum key present, zeros included), the duration, and a completion status.
+`validate` SHALL return a `RunSummary` with records read, rules selected, result count, error count, a count per `Decision`, a count of findings (`INVALID` and `REVIEW` results) per `Severity` (every enum key present, zeros included), the duration, and a completion status.
 
 ##### Scenario: Fixture summary
 - WHEN the §5 fixture runs, with severities `countryBlocked=ERROR`, `vatFormat=ERROR`, `ibanFormat=WARNING`
-- THEN results=9, errors=0, `VALID=3, INVALID=4, REVIEW=0, NOT_APPLICABLE=2`, `ERROR=6, WARNING=3, INFO=0`
+- THEN results=9, errors=0, `VALID=3, INVALID=4, REVIEW=0, NOT_APPLICABLE=2`, `ERROR=3, WARNING=1, INFO=0`
 
 #### ADDED Requirement: Bounded-memory streaming (Phase 2)
 The engine SHALL process a streamed JSON input of any length with heap use bounded by `batchSize`, not by the input size, delivering each outcome to the listener as it is produced. After each batch it SHALL call `onBatchComplete`.
@@ -253,8 +253,8 @@ interface ValidationListener {
 
 ### HTTP example (`dq-http-example`)
 - `POST /validations`, `Content-Type: application/json`, body is a JSON array of records.
-  - Phase 1: `200 {summary, results[], errors[]}`. Bodies over `dq.http.max-records` (default 10,000) get `413` with a hint to use NDJSON. Invalid JSON gets `400` with a problem-detail body.
-  - Phase 2, `Accept: application/x-ndjson`: the response streams one line per outcome (`{"type":"result",…}` or `{"type":"error",…}`) and ends with `{"type":"summary",…}`. If the run aborts after the response has started, the last line is `{"type":"aborted","reason":…}`, because the status code has already been sent.
+  - Phase 1: `200 {summary, records[]}`, one entry per input record: `{recordId, results: {ruleId → {decision, severity (only for INVALID and REVIEW), provenance (the rule's explanation, e.g. `len 4 instead of 9`, else its label)}}, errors[]}`, with results in catalog order. Bodies over `dq.http.max-records` (default 10,000) get `413` with a hint to use NDJSON. Invalid JSON gets `400` with a problem-detail body.
+  - Phase 2, `Accept: application/x-ndjson`: the response streams one line per record (`{"type":"record",…}`, the same shape as a `records[]` entry) and ends with `{"type":"summary",…}`. If the run aborts after the response has started, the last line is `{"type":"aborted","reason":…}`, because the status code has already been sent.
   - Phase 2 query parameters: `status`, `country`, `category` (repeatable, ANDed across kinds and ORed within a kind), and `batchSize`.
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -317,3 +317,7 @@ Steps 1–15, 17 and 18 are implemented, one commit per Step on `feat/dq-rule-en
 - `InvalidCatalogException` is also thrown by `Rule.builder().build()` and `DecisionMapping.build()`, so an invalid definition cannot be constructed at all.
 - `RunOptions` gained its `filter` component in Step 13, the Step that introduced `RuleFilter`.
 - Review follow-up: `RunOptions` and `Provenance` are final classes with accessors rather than records, so later minor versions can add settings or provenance data without breaking constructors or record patterns. The HTTP host serializes results through its own `ResultView`/`ProvenanceView`, so the JSON shape does not change. The host also caps `batchSize` at `dq.http.max-batch-size`.
+- HTTP responses are grouped by record (`records[]`, and one `record` line per record in NDJSON) instead of flat `results[]`/`errors[]` lists. The host's `RecordGrouping` listener builds them; the library still delivers one outcome at a time.
+- Rules may declare a `RuleExplainer` (`Rule.builder().explain(…)`): from the fields the logic read and the value it computed, it gives a plain-words reason, `Provenance.explanation()`. A throwing explainer is a `RULE_EXCEPTION`; for `OUT_OF_SCOPE` the engine writes the reason. `Rule` gained the `explainer` record component for this, before the first release.
+- `RunSummary.bySeverity` counts findings only (`INVALID` and `REVIEW` results), so the fixture summary is `ERROR=3, WARNING=1, INFO=0`. The HTTP reply omits `recordIndex`; the library's `Result` and `EvaluationError` keep it.
+- The HTTP reply's summary omits `resultCount` (it is the sum of `byDecision`); `RunSummary.resultCount()` stays in the library.

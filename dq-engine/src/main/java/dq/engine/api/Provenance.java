@@ -3,6 +3,7 @@ package dq.engine.api;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SequencedMap;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -34,6 +35,14 @@ public class Provenance {
     String computedValue;
     /** How the decision was reached. */
     Basis basis;
+    /** Null when there is none; exposed as {@link #explanation()}. */
+    String explanation;
+
+    /** Like {@link #Provenance(String, String, String, long, SequencedMap, String, Basis, String)}, without an explanation. */
+    public Provenance(String ruleId, String ruleLabel, String recordId, long recordIndex,
+            SequencedMap<String, Object> fieldsRead, String computedValue, Basis basis) {
+        this(ruleId, ruleLabel, recordId, recordIndex, fieldsRead, computedValue, basis, null);
+    }
 
     /**
      * Normally created by the engine; public for host test doubles.
@@ -45,9 +54,10 @@ public class Provenance {
      * @param fieldsRead    every field the rule read, in read order, with the value found or {@link #ABSENT}
      * @param computedValue the value the rule logic returned; {@code null} for {@link Basis#OUT_OF_SCOPE}
      * @param basis         how the decision was reached
+     * @param explanation   a human-readable reason, or {@code null} for none
      */
     public Provenance(String ruleId, String ruleLabel, String recordId, long recordIndex,
-            SequencedMap<String, Object> fieldsRead, String computedValue, Basis basis) {
+            SequencedMap<String, Object> fieldsRead, String computedValue, Basis basis, String explanation) {
         this.ruleId = Objects.requireNonNull(ruleId, "ruleId");
         this.ruleLabel = Objects.requireNonNull(ruleLabel, "ruleLabel");
         this.recordId = Objects.requireNonNull(recordId, "recordId");
@@ -56,6 +66,16 @@ public class Provenance {
                 new LinkedHashMap<>(Objects.requireNonNull(fieldsRead, "fieldsRead")));
         this.computedValue = computedValue;
         this.basis = Objects.requireNonNull(basis, "basis");
+        this.explanation = explanation;
+    }
+
+    /**
+     * A human-readable reason for the decision, such as {@code "len 4 instead of 9"}: from the rule's
+     * {@link RuleExplainer}, or from the engine for {@link Basis#OUT_OF_SCOPE}. Empty when the rule
+     * declares no explainer, or its explainer gave none.
+     */
+    public Optional<String> explanation() {
+        return Optional.ofNullable(explanation);
     }
 
     /** How the decision was reached. */
