@@ -11,6 +11,7 @@ import dq.engine.api.RecordSources;
 import dq.engine.api.Result;
 import dq.engine.api.RuleCatalog;
 import dq.engine.api.RunOptions;
+import dq.engine.api.RunStatus;
 import dq.engine.api.RunSummary;
 import dq.engine.api.ValidationListener;
 import dq.engine.fixtures.Fixture;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class BatchingTest {
@@ -26,6 +28,11 @@ class BatchingTest {
 
     private static List<Map<String, Object>> records(int n) {
         return IntStream.range(0, n).mapToObj(i -> Fixture.record("id", "r" + i)).toList();
+    }
+
+    @AfterEach
+    void clearInterrupt() {
+        Thread.interrupted();
     }
 
     private static class Recording implements ValidationListener {
@@ -82,5 +89,62 @@ class BatchingTest {
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at least 1");
         assertThatThrownBy(() -> new RunOptions(-5, dq.engine.api.RuleFilter.all()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void anInterruptedExceptionInARuleIsIsolatedButStillCancelsTheRun() {
+        DqEngine interrupting = DqEngine.builder().catalog(RuleCatalog.of(
+                TestRules.rule("sleepy", f -> { throw new InterruptedException("stop"); }).build())).build();
+        var listener = new Recording();
+
+        RunSummary summary = interrupting.validate(RecordSources.of(records(10)), listener,
+                RunOptions.builder().batchSize(5).build());
+
+        assertThat(summary.status()).isEqualTo(RunStatus.CANCELLED);
+        assertThat(summary.errorCount()).isEqualTo(1);
+        assertThat(summary.recordsRead()).isEqualTo(1);
+    }
+
+    @Test
+    void cancellationDoesNotConsumeTheNextBatchFromTheSource() {
+        var pulled = new java.util.concurrent.atomic.AtomicInteger();
+        var delegate = RecordSources.of(records(250));
+        dq.engine.api.RecordSource counting = () -> {
+            var element = delegate.next();
+            if (element != null) {
+                pulled.incrementAndGet();
+            }
+            return element;
+        };
+        ValidationListener interruptAfterFirstBatch = new Recording() {
+            @Override
+            public void onBatchComplete(BatchProgress progress) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        engine.validate(counting, interruptAfterFirstBatch, RunOptions.builder().batchSize(100).build());
+
+        assertThat(pulled).hasValue(100);
+    }
+
+    @Test
+    void interruptStopsTheRunBetweenRecordsAsCancelled() {
+        ValidationListener interruptAfterFirstBatch = new Recording() {
+            @Override
+            public void onBatchComplete(BatchProgress progress) {
+                super.onBatchComplete(progress);
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        RunSummary summary = engine.validate(RecordSources.of(records(250)), interruptAfterFirstBatch,
+                RunOptions.builder().batchSize(100).build());
+
+        assertThat(summary.status()).isEqualTo(RunStatus.CANCELLED);
+        assertThat(summary.recordsRead()).isEqualTo(100);
+        assertThat(summary.resultCount()).isEqualTo(200);
+        assertThat(((Recording) interruptAfterFirstBatch).results).isEqualTo(200);
+        assertThat(Thread.currentThread().isInterrupted()).as("interrupt flag is preserved").isTrue();
     }
 }
