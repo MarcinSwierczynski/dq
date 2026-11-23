@@ -1,0 +1,23 @@
+dq-engine/build.gradle.kts
+  s_d5d1a93df045d4::t_b845b2fee8da71 31,33-46
+dq-engine/src/main/java/dq/engine/api/CountingListener.java
+  s_d5d1a93df045d4::t_d528a36371161e 1-37
+dq-engine/src/test/java/dq/engine/ScaleTest.java
+  s_d5d1a93df045d4::t_6cd81860ddab0d 1-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f8c0dd3c4674a687def9e61b98df70ebe9a7797b",
+  "prompts": {},
+  "sessions": {
+    "s_d5d1a93df045d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a29e1f87-c2e0-4697-a440-93f41ed8633c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
