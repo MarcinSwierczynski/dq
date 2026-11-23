@@ -1,0 +1,42 @@
+dq-engine/src/test/java/dq/engine/BatchingTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 4,69,166
+docs/specs/capabilities/dq-rule-evaluation.md
+  s_44978d961c7434::t_e7a44e78dc7e48 47
+dq-engine/src/test/java/dq/engine/ScopeAndSelectionTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 5,101,108,120
+dq-engine/src/test/java/dq/engine/FaultIsolationTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 4,51,87,130,176
+dq-engine/src/test/java/dq/engine/JsonArraySourceTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 3,46,65,99,225
+dq-engine/src/test/java/dq/engine/RuleFilterTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 8,83
+dq-engine/src/test/java/dq/engine/ScaleTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 3,39,43
+DESIGN.md
+  s_44978d961c7434::t_e7a44e78dc7e48 187-188
+dq-engine/src/test/java/dq/engine/FixtureScenarioTest.java
+  s_44978d961c7434::t_e7a44e78dc7e48 3,92
+dq-engine/src/main/java/dq/engine/run/RunSummary.java
+  s_44978d961c7434::t_e7a44e78dc7e48 17
+dq-engine/src/testFixtures/java/dq/engine/fixtures/Fixture.java
+  s_44978d961c7434::t_e7a44e78dc7e48 12,82-85
+  s_44978d961c7434::t_65c45236a3b86f 86
+dq-engine/src/main/java/dq/engine/run/RunExecution.java
+  s_44978d961c7434::t_e7a44e78dc7e48 271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e83bd49d65f39aa89663a4f1cc229fc9522aaeb",
+  "prompts": {},
+  "sessions": {
+    "s_44978d961c7434": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ddc335ad-f075-456c-8979-cd10fb2cd80c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
