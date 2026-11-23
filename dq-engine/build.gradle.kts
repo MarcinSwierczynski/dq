@@ -1,6 +1,12 @@
 plugins {
     `java-library`
     `java-test-fixtures`
+    // Compile-time only: generates accessors/equals/builders; nothing from Lombok ships at runtime.
+    alias(libs.plugins.freefair.lombok)
+}
+
+lombok {
+    version = libs.versions.lombok
 }
 
 java {

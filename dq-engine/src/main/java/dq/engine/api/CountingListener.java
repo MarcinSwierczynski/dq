@@ -1,9 +1,17 @@
 package dq.engine.api;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
 /** Counts outcomes and batches without keeping them; constant memory. Not thread-safe. */
+@Getter
+@Accessors(fluent = true)
 public final class CountingListener implements ValidationListener {
+    /** Results received so far. */
     private long results;
+    /** Errors received so far. */
     private long errors;
+    /** Completed batches so far. */
     private long batches;
 
     public CountingListener() {}
@@ -21,17 +29,5 @@ public final class CountingListener implements ValidationListener {
     @Override
     public void onBatchComplete(BatchProgress progress) {
         batches++;
-    }
-
-    public long results() {
-        return results;
-    }
-
-    public long errors() {
-        return errors;
-    }
-
-    public long batches() {
-        return batches;
     }
 }
