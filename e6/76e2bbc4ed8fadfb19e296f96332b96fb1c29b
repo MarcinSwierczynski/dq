@@ -1,0 +1,73 @@
+dq-engine/src/main/java/dq/engine/api/Severity.java
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 3
+dq-engine/src/test/java/dq/engine/FixtureScenarioTest.java
+  s_1850d04bb52991::t_c26288985cc5ec 1-87
+dq-engine/src/main/java/dq/engine/internal/RunExecution.java
+  s_cc5f98e1b715d0::t_a98126e5efe1df 29,49,81-84,156,166
+  s_1850d04bb52991::t_570413d656a129 58,63-76
+  s_1850d04bb52991::t_58d3c9fc7257aa 92
+  s_cc5f98e1b715d0::t_c3d8e5cce7a3d5 114-120
+  s_1850d04bb52991::t_8b141d558ea59c 1-28,30-48,50-57,59-62,77-80,85-91,93-113,121-155,157-165,167-174
+dq-engine/src/main/java/dq/engine/api/RunStatus.java
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 9
+  s_1850d04bb52991::t_30ac2d3dcc12c6 1-8,10-11
+dq-engine/src/test/java/dq/engine/ScopeAndSelectionTest.java
+  s_1850d04bb52991::t_a0d470f01e922f 1-5,7-84,88-120
+  s_1850d04bb52991::t_10721848eab2e8 6,85-87
+dq-engine/src/main/java/dq/engine/api/Result.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-22
+dq-engine/src/main/java/dq/engine/api/ValidationListener.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-13
+dq-engine/src/main/java/dq/engine/api/RecordSources.java
+  s_1850d04bb52991::t_8f51f7014146f4 1-18
+dq-engine/src/main/java/dq/engine/api/EvaluationError.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-39
+dq-engine/src/test/java/dq/engine/TestRules.java
+  s_1850d04bb52991::t_a0d470f01e922f 1-24
+dq-engine/src/main/java/dq/engine/api/RuleCatalog.java
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 9
+dq-engine/src/main/java/dq/engine/api/RuleLogic.java
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 9
+dq-engine/src/main/java/dq/engine/api/RecordSource.java
+  s_1850d04bb52991::t_8f51f7014146f4 1-8,10-15,20-22
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 9
+  s_1850d04bb52991::t_570413d656a129 16-19
+dq-engine/src/main/java/dq/engine/api/DqEngine.java
+  s_cc5f98e1b715d0::t_a98126e5efe1df 32,35,37,39,43
+  s_1850d04bb52991::t_24d1628bd85ad4 40-42
+  s_1850d04bb52991::t_56898ea79fcb43 1-31,33-34,36,38,44-98
+dq-engine/src/main/java/dq/engine/api/SourceElement.java
+  s_1850d04bb52991::t_8f51f7014146f4 1-30
+dq-engine/src/main/java/dq/engine/api/RunSummary.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-46
+dq-engine/src/test/java/dq/engine/RuleCatalogTest.java
+  s_cc5f98e1b715d0::t_fbf349c0d2656b 8,36-42
+  s_cc5f98e1b715d0::t_330fc766eb0001 43-44
+dq-engine/src/main/java/dq/engine/api/CollectingListener.java
+  s_1850d04bb52991::t_25a38fdd43dff3 1-13,16-35
+  s_1850d04bb52991::t_58d3c9fc7257aa 14-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e676e2bbc4ed8fadfb19e296f96332b96fb1c29b",
+  "prompts": {},
+  "sessions": {
+    "s_1850d04bb52991": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4966d2f6-6bbf-4370-af38-a25b223dcc2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    },
+    "s_cc5f98e1b715d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c989da1c-765c-40b5-ab3c-b6e88815115d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
