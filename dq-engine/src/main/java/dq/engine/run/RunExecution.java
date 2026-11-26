@@ -8,13 +8,18 @@ import dq.engine.source.RecordSource;
 import dq.engine.source.SourceElement;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * State and loop of a single validation run. Created per {@code validate} call and confined to the
- * calling thread.
+ * calling thread; with {@link RunOptions#executor()}, only {@link Evaluator} calls run elsewhere.
  *
  * <p>Loop: pull up to {@code batchSize} elements into a buffer, evaluate each record against the selected
  * rules ({@link Evaluator}), hand its outcomes to the listener, signal {@code onBatchComplete}, drop the
@@ -99,19 +104,11 @@ final class RunExecution {
                 batch.add(element);
             }
             // Records buffered before a source failure are still evaluated and delivered.
-            for (SourceElement element : batch) {
-                if (Thread.currentThread().isInterrupted()) {
-                    return RunStatus.CANCELLED;
-                }
-                List<Object> outcomes;
-                try {
-                    outcomes = evaluator.evaluate(element, recordsRead, selected);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // keep the flag set, as for any cancelled run
-                    return RunStatus.CANCELLED;
-                }
-                emitAll(outcomes);
-                recordsRead++;
+            boolean finished = options.executor().isPresent()
+                    ? evaluateInWindow(batch, options.executor().get())
+                    : evaluateInline(batch);
+            if (!finished) {
+                return RunStatus.CANCELLED;
             }
             if (sourceFailure != null) {
                 throw new Abort("record source failed after " + recordsRead + " records: "
@@ -124,6 +121,100 @@ final class RunExecution {
             }
         }
         return RunStatus.COMPLETED;
+    }
+
+    /** Evaluates and delivers a batch on the calling thread. @return false if the run was cancelled */
+    private boolean evaluateInline(List<SourceElement> batch) {
+        for (SourceElement element : batch) {
+            if (Thread.currentThread().isInterrupted()) {
+                return false;
+            }
+            List<Object> outcomes;
+            try {
+                outcomes = evaluator.evaluate(element, recordsRead, selected);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // keep the flag set, as for any cancelled run
+                return false;
+            }
+            emitAll(outcomes);
+            recordsRead++;
+        }
+        return true;
+    }
+
+    /**
+     * Evaluates a batch on the host's executor, one task per record, with at most {@code maxInFlight}
+     * tasks submitted and not yet delivered. The window is a reorder buffer: tasks finish in any order,
+     * but the calling thread delivers their outcomes oldest first, so the listener sees exactly the
+     * sequential order, on the calling thread. The window is drained before the batch completes.
+     *
+     * @return false if the run was cancelled; the delivered outcomes are then an in-order prefix
+     */
+    private boolean evaluateInWindow(List<SourceElement> batch, Executor executor) {
+        int maxInFlight = options.maxInFlight();
+        List<Rule> rules = selected;
+        var window = new ArrayDeque<FutureTask<List<Object>>>(Math.min(maxInFlight, batch.size()));
+        try {
+            long index = recordsRead;
+            for (SourceElement element : batch) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return false;
+                }
+                if (window.size() == maxInFlight && !deliverOldest(window)) {
+                    return false;
+                }
+                long recordIndex = index++;
+                var task = new FutureTask<>(() -> evaluateOnWorker(element, recordIndex, rules));
+                try {
+                    executor.execute(task);
+                } catch (RejectedExecutionException e) {
+                    throw new Abort("the executor rejected an evaluation: " + e.getMessage(), e);
+                }
+                window.addLast(task);
+            }
+            while (!window.isEmpty()) {
+                if (!deliverOldest(window)) {
+                    return false;
+                }
+            }
+            return true;
+        } finally {
+            // Cancelled, aborted or failed: evaluations nobody will deliver are stopped.
+            window.forEach(task -> task.cancel(true));
+        }
+    }
+
+    private List<Object> evaluateOnWorker(SourceElement element, long index, List<Rule> rules)
+            throws InterruptedException {
+        try {
+            return evaluator.evaluate(element, index, rules);
+        } finally {
+            // A rule that interrupted itself (or our cancel) must not leave the host's pool thread interrupted.
+            Thread.interrupted();
+        }
+    }
+
+    /** Waits for the oldest task and delivers its outcomes. @return false if the calling thread was interrupted */
+    private boolean deliverOldest(ArrayDeque<FutureTask<List<Object>>> window) {
+        List<Object> outcomes;
+        try {
+            outcomes = window.getFirst().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // keep the flag set, as for any cancelled run
+            return false;
+        } catch (ExecutionException e) {
+            // The Evaluator isolates rule failures, so what arrives here is a fatal Error, an engine bug,
+            // or the host's executor interrupting its own thread.
+            switch (e.getCause()) {
+                case Error fatal -> throw fatal;
+                case RuntimeException bug -> throw bug;
+                case Throwable other -> throw new Abort("an evaluation was interrupted on its executor thread", other);
+            }
+        }
+        window.removeFirst();
+        emitAll(outcomes);
+        recordsRead++;
+        return true;
     }
 
     /** INVALID and REVIEW are findings; VALID and NOT_APPLICABLE are not, so they carry no severity weight. */

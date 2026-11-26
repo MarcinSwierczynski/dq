@@ -4,8 +4,10 @@ Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](
 
 ## 1. Trade-offs under the time-box
 
-- **Sequential evaluation.** It keeps callbacks single-threaded and output deterministic. The batch
-  loop is the place to parallelize later (§2).
+- **Parallel evaluation is opt-in, per record.** Sequential evaluation stays the default: it needs no
+  threads, and for cheap rules it is faster. The parallel unit is a record, not a (rule, record)
+  cell, which keeps one task's outcomes together for in-order delivery; a record with one slow rule
+  holds its slot in the window.
 - **Timeouts are opt-in.** Without `ruleTimeout` a rule that loops forever stalls the run; with it,
   every evaluation pays for a virtual thread, and an abandoned rule that ignores interrupts keeps
   running in the background.
@@ -26,41 +28,7 @@ Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](
   `SourceElement next()`, where the sealed `SourceElement` is `Fields | Unreadable`, so a host source
   can report a non-record without throwing.
 
-## 2. Adding parallel evaluation
-
-Parallelism can be added inside `RunExecution.loop` without changing the public contract. Only
-evaluation goes parallel. The source, the listener and the counters stay on the calling thread, so
-callbacks stay single-threaded and the output matches a sequential run exactly. Rule code is already
-required to be thread-safe (`RuleLogic`, `RuleExplainer`), and each evaluation has its own
-`TrackingFieldReader`.
-
-1. **Split computing from emitting.** `evaluate` returns a record's outcomes instead of calling
-   `emit`. This is a pure refactor, the existing tests cover it, and the isolation `try`/`catch` moves
-   with the computation, so F3 holds on any thread.
-2. **One task per record, delivered in order.** Submit records into a bounded window
-   (`ArrayDeque<Future<List<Outcome>>>`). When the window is full, `join()` the oldest future and
-   deliver its outcomes. This is the reorder buffer: tasks finish in any order, but outcomes are
-   delivered in input order. Drain the window before `onBatchComplete`, so a batch is still a commit
-   point.
-3. **Options (additive).** `RunOptions.executor(Executor)` defaults to running each task inline,
-   which is today's behavior. Hosts pass virtual threads for blocking rules or a fixed pool for
-   CPU-bound ones. The engine never owns threads, and it avoids the common `ForkJoinPool`.
-   `maxInFlight(int)` sets the window size. Memory becomes `batchSize` records plus `maxInFlight`
-   records' outcomes, which is still independent of the input size.
-4. **Failures.** On a listener failure, a source failure or an interrupt of the calling thread, cancel
-   the window, then abort or cancel as today. The delivered output stays an in-order prefix. An `Error`
-   comes out of `join()` wrapped in a `CompletionException` and is rethrown unwrapped. A rule's
-   `InterruptedException` interrupts only its worker thread, so it must not cancel the run, and the
-   task wrapper clears the flag.
-5. **Tests.** Run the existing suites in both modes. Add rules that sleep for random times and assert
-   that the parallel output equals the sequential output. Assert that every callback runs on the
-   calling thread. Add a parallel `ScaleTest` under the 64 MB cap.
-
-Per-rule timeouts are built (see [DESIGN §2](DESIGN.md#2-fault-isolation-f3)); they already run each
-evaluation on its own thread, and `Evaluator` is thread-safe, so a parallel record task simply calls
-it.
-
-## 3. Adding a per-rule circuit breaker
+## 2. Adding a per-rule circuit breaker
 
 The breaker turns off a rule that keeps failing for the rest of the run, so it stops wasting time and
 flooding the listener with errors.

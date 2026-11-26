@@ -5,8 +5,7 @@ data-quality rules over a stream of JSON-like records and pushes every outcome t
 supplies. `dq-engine-json` is a separate adapter module that reads records from JSON with Jackson. A
 Spring Boot app, `dq-http-example`, shows how a host embeds both. The full build plan and its decisions are in
 [`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-engine.md). The trade-offs made
-under the time-box, and designs for parallel evaluation and a per-rule circuit breaker, are in
-[`DETAILS.md`](DETAILS.md).
+under the time-box, and the design for a per-rule circuit breaker, are in [`DETAILS.md`](DETAILS.md).
 
 ```
 RecordSource ──► DqEngine.validate ──► per record × selected rule:
@@ -87,7 +86,7 @@ Why this shape:
   nothing from it ships at runtime. Javadoc is built from the delomboked sources.
 - **Deterministic order.** Results come in input order, and within a record in catalog order
   (`FixtureScenarioTest.emitsInInputOrderThenCatalogOrder`). Callbacks run on the calling thread, so
-  listeners do not need to be thread-safe.
+  listeners do not need to be thread-safe. Both hold when records are evaluated in parallel (§3).
 
 ## 2. Fault isolation (F3)
 
@@ -169,14 +168,48 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
   run produces 3,000,000 outcomes, and on a laptop it takes about 0.7 s (~1.4M records/s). As a control,
   the same test with a `CollectingListener` fails under that cap with `OutOfMemoryError: Java heap
   space`, so the cap really separates streaming from accumulation.
-- The batch is the host's commit point (flush a DB batch, commit an offset). It is also the unit a
-  future parallel executor would split on. `BatchingTest` checks the 1000/1000/500 split.
+- The batch is the host's commit point (flush a DB batch, commit an offset). `BatchingTest` checks
+  the 1000/1000/500 split.
 - Cancellation: the engine checks the thread's interrupt flag between records, returns `CANCELLED`
   with the counts so far, and leaves the flag set (`BatchingTest.interruptStopsTheRunBetweenRecordsAsCancelled`).
   Because the check also runs inside a batch, a cancelled (or aborted) run can deliver outcomes after
   its last `onBatchComplete`; that partial batch gets no callback, so a host that commits per batch
   also flushes when `validate` returns or throws
   (`BatchingTest.aRunCancelledInsideABatchGetsNoCallbackForThatPartialBatch`).
+
+**Parallel evaluation.** `RunOptions.builder().executor(executor).maxInFlight(n)` evaluates records
+on the host's executor. Only evaluation moves: the source, the listener and the counters stay on the
+calling thread, so the output is exactly that of a sequential run (`RunExecution.evaluateInWindow`).
+
+- **One task per record, delivered in order.** The calling thread submits each record of the batch as
+  a `FutureTask` into a window of at most `maxInFlight` (default 64). When the window is full, it waits
+  for the *oldest* task and delivers its outcomes. Tasks finish in any order, but outcomes leave in
+  input order, so the window is a reorder buffer and the backpressure on the source in one. It is
+  drained before `onBatchComplete`, so a batch is still a commit point. `Evaluator` holds no per-run
+  state and each evaluation has its own `TrackingFieldReader`, so it is safe on any thread; rule code
+  is already required to be thread-safe.
+- **The engine never owns threads.** Without an executor (the default), nothing changes. Hosts pass
+  virtual threads for blocking rules or a fixed pool for CPU-bound ones; the engine never shuts the
+  executor down and avoids the common `ForkJoinPool`. Memory becomes `batchSize` records plus
+  `maxInFlight` records' outcomes, which is still independent of the input size.
+- **Failures.** A listener failure, a source failure, or an interrupt of the calling thread cancels
+  (interrupts) the tasks still in the window; the run then aborts or is cancelled as before, and the
+  delivered output is an in-order prefix. An `Error` from a task is rethrown unwrapped. A task the
+  executor rejects aborts the run with the `RejectedExecutionException` as cause. A rule that
+  interrupts itself only interrupts its worker, so it does not cancel the run, and the task clears the
+  flag so it does not leak into the host's pool thread.
+- **Timeouts compose.** With `ruleTimeout` set, a record task waits for each rule's virtual thread as
+  the calling thread does in a sequential run.
+- **Proof** (`ParallelEvaluationTest`). 500 records through rules that sleep for random times and
+  rules that fail give *equal* outcomes, batches and summaries to a sequential run, and every callback
+  runs on the calling thread. A rule that waits on a 4-party barrier completes only because four
+  records run at once; `maxInFlight(3)` keeps at most three running. Aborts, cancellation, rejection,
+  `Error`s and self-interrupting rules each have a test. `ScaleTest` also streams the 1,000,000
+  records through a fixed pool under the 64 MB cap.
+- **When it helps.** The fixture's rules take well under a microsecond, so for them JSON parsing on
+  the calling thread is the bottleneck, and a parallel run is slightly *slower* (≈0.9 s instead of
+  ≈0.75 s for 1M records), the cost of a task per record. Parallelism pays off when rules are
+  expensive or block (a lookup, a remote check), which is when a host would turn it on.
 
 ## 4. Seams for host-supplied inputs
 
@@ -263,9 +296,10 @@ provenance is stored or returned.
 
 ## 7. What I'd do next
 
-1. Parallel evaluation ([DETAILS §2](DETAILS.md#2-adding-parallel-evaluation)).
-2. The per-rule circuit breaker ([DETAILS §3](DETAILS.md#3-adding-a-per-rule-circuit-breaker)), so a
+1. The per-rule circuit breaker ([DETAILS §2](DETAILS.md#2-adding-a-per-rule-circuit-breaker)), so a
    rule that keeps failing or timing out stops costing a thread and a timeout per record.
+2. Parse the input in parallel too (for example NDJSON split by line ranges), since the JSON parser on
+   the calling thread is the bottleneck for cheap rules.
 3. CEL-backed logic registered in the `LogicRegistry`, so new rule code can be authored without a
    deployment (today only definitions can).
 4. NDJSON input with line-level recovery from malformed records.

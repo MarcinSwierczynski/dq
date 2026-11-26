@@ -11,6 +11,8 @@ import dq.engine.run.RunStatus;
 import dq.engine.run.RunSummary;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -26,19 +28,32 @@ class ScaleTest {
 
     @Test
     void oneMillionRecordsInBoundedMemory() {
+        runAndCheck("sequential", RunOptions.builder().batchSize(1000).build());
+    }
+
+    @Test
+    void oneMillionRecordsInParallelInBoundedMemory() {
+        int threads = Math.max(2, Runtime.getRuntime().availableProcessors());
+        try (ExecutorService pool = Executors.newFixedThreadPool(threads)) {
+            runAndCheck("parallel x" + threads, RunOptions.builder().batchSize(1000).executor(pool).build());
+        }
+    }
+
+    private static void runAndCheck(String mode, RunOptions options) {
         DqEngine engine = DqEngine.builder().catalog(Fixture.catalog()).build();
         var listener = new CountingListener();
         long maxHeap = Runtime.getRuntime().maxMemory();
 
         RunSummary summary = engine.validate(JsonRecordSources.jsonArray(new GeneratedRecords(RECORDS)), listener,
-                RunOptions.builder().batchSize(1000).build());
+                options);
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
         assertThat(summary.recordsRead()).isEqualTo(RECORDS);
         assertThat(resultCount(summary) + summary.errorCount()).isEqualTo(3L * RECORDS);
         assertThat(listener.results() + listener.errors()).isEqualTo(3L * RECORDS);
         assertThat(listener.batches()).isEqualTo(RECORDS / 1000);
-        System.out.printf(java.util.Locale.ROOT, "scale: %,d records, %,d outcomes in %d ms (%,.0f records/s), max heap %d MB%n",
+        System.out.printf(java.util.Locale.ROOT,
+                "scale (%s): %,d records, %,d outcomes in %d ms (%,.0f records/s), max heap %d MB%n", mode,
                 summary.recordsRead(), resultCount(summary) + summary.errorCount(), summary.duration().toMillis(),
                 summary.recordsRead() / Math.max(0.001, summary.duration().toNanos() / 1e9), maxHeap >> 20);
     }

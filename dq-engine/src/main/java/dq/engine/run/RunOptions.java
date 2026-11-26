@@ -4,6 +4,7 @@ import dq.engine.catalog.RuleFilter;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -18,6 +19,8 @@ import lombok.experimental.Accessors;
 public class RunOptions {
 
     public static final int DEFAULT_BATCH_SIZE = 1000;
+
+    public static final int DEFAULT_MAX_IN_FLIGHT = 64;
 
     private static final RunOptions DEFAULTS = builder().build();
 
@@ -34,14 +37,28 @@ public class RunOptions {
     /** Null when there is none; exposed as {@link #ruleTimeout()}. */
     Duration ruleTimeout;
 
+    /** Null for sequential evaluation; exposed as {@link #executor()}. */
+    Executor executor;
+
     /**
-     * @throws IllegalArgumentException if {@code batchSize < 1} or {@code ruleTimeout} is not positive
+     * With an {@link #executor()}: records submitted and not yet delivered, at most; at least 1, default
+     * {@value #DEFAULT_MAX_IN_FLIGHT}. Bounds both concurrency and the outcomes held for reordering.
+     * Ignored for sequential runs.
+     */
+    int maxInFlight;
+
+    /**
+     * @throws IllegalArgumentException if {@code batchSize < 1}, {@code maxInFlight < 1}, or
+     *     {@code ruleTimeout} is not positive
      * @throws NullPointerException     if {@code filter} is null
      */
     @lombok.Builder(builderClassName = "Builder")
-    private RunOptions(int batchSize, RuleFilter filter, Duration ruleTimeout) {
+    private RunOptions(int batchSize, RuleFilter filter, Duration ruleTimeout, Executor executor, int maxInFlight) {
         if (batchSize < 1) {
             throw new IllegalArgumentException("batchSize must be at least 1, was " + batchSize);
+        }
+        if (maxInFlight < 1) {
+            throw new IllegalArgumentException("maxInFlight must be at least 1, was " + maxInFlight);
         }
         if (ruleTimeout != null && (ruleTimeout.isNegative() || ruleTimeout.isZero())) {
             throw new IllegalArgumentException("ruleTimeout must be positive, was " + ruleTimeout);
@@ -49,6 +66,23 @@ public class RunOptions {
         this.batchSize = batchSize;
         this.filter = Objects.requireNonNull(filter, "filter");
         this.ruleTimeout = ruleTimeout;
+        this.executor = executor;
+        this.maxInFlight = maxInFlight;
+    }
+
+    /**
+     * Where records are evaluated; empty (the default) to evaluate them one by one on the calling thread.
+     *
+     * <p>With an executor, each record is one task, and up to {@link #maxInFlight()} run at a time. The
+     * output is unchanged: the calling thread delivers every outcome, in input order and then catalog
+     * order, so listeners still need not be thread-safe, and a batch is still delivered completely
+     * before {@code onBatchComplete}. Use virtual threads for rules that block, or a fixed pool for
+     * CPU-bound ones. The engine never shuts the executor down; a task it rejects aborts the run. Rule
+     * code then runs on the executor's threads, so it must be thread-safe (as {@code RuleLogic}
+     * already requires) and cannot cancel the run by interrupting itself.
+     */
+    public Optional<Executor> executor() {
+        return Optional.ofNullable(executor);
     }
 
     /**
@@ -75,6 +109,8 @@ public class RunOptions {
         private int batchSize = DEFAULT_BATCH_SIZE;
         private RuleFilter filter = RuleFilter.all();
         private Duration ruleTimeout;
+        private Executor executor;
+        private int maxInFlight = DEFAULT_MAX_IN_FLIGHT;
 
         private Builder() {}
     }
