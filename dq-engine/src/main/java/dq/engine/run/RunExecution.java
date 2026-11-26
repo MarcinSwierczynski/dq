@@ -15,7 +15,6 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SequencedMap;
 
 /**
@@ -128,8 +127,8 @@ final class RunExecution {
 
     private void evaluate(SourceElement element, long index) {
         switch (element) {
-            case SourceElement.Unreadable unreadable -> emit(new EvaluationError(Optional.empty(), "#" + index,
-                    index, ErrorKind.UNREADABLE_RECORD, unreadable.reason(), null, new LinkedHashMap<>(), null));
+            case SourceElement.Unreadable unreadable -> emit(new EvaluationError(null, "#" + index, index,
+                    ErrorKind.UNREADABLE_RECORD, unreadable.reason(), new LinkedHashMap<>(), null));
             case SourceElement.Fields(Map<String, ?> fields) -> {
                 String recordId = recordId(fields, index);
                 Object country = fields.get(countryField);
@@ -238,8 +237,7 @@ final class RunExecution {
 
     private static EvaluationError error(Rule rule, String recordId, long index, ErrorKind kind, String message,
             Throwable cause, TrackingFieldReader reader) {
-        return new EvaluationError(Optional.of(rule.id()), recordId, index, kind, message,
-                cause == null ? null : cause.getClass().getName(), reader.fieldsRead(), cause);
+        return new EvaluationError(rule.id(), recordId, index, kind, message, reader.fieldsRead(), cause);
     }
 
     private void emit(Result result) {
@@ -253,7 +251,7 @@ final class RunExecution {
     private void emit(EvaluationError error) {
         // Never log field values: provenance may hold tax ids or IBANs.
         LOG.log(Level.DEBUG, () -> "evaluation error: rule=" + error.ruleId().orElse("-") + " record="
-                + error.recordId() + " kind=" + error.kind() + " cause=" + error.causeType());
+                + error.recordId() + " kind=" + error.kind() + " cause=" + error.causeType().orElse("-"));
         deliver(() -> listener.onError(error));
         errorCount++;
     }

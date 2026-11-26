@@ -27,8 +27,8 @@ class RecordGroupingTest {
     }
 
     private static EvaluationError error(Optional<String> rule, String recordId, long index) {
-        return new EvaluationError(rule, recordId, index, ErrorKind.RULE_EXCEPTION, "boom", null,
-                new LinkedHashMap<>(), null);
+        return new EvaluationError(rule.orElse(null), recordId, index, ErrorKind.RULE_EXCEPTION, "boom", null,
+                new LinkedHashMap<>());
     }
 
     @Test

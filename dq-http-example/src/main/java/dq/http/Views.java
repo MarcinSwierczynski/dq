@@ -58,7 +58,7 @@ final class Views {
             String causeType, Map<String, Object> fieldsRead) {
         static ErrorView of(EvaluationError e) {
             return new ErrorView(e.ruleId().orElse(null), e.recordId(), e.kind().name(),
-                    e.message(), e.causeType(), e.fieldsRead());
+                    e.message(), e.causeType().orElse(null), e.fieldsRead());
         }
     }
 }

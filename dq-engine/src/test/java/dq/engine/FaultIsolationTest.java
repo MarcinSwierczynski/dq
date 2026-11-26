@@ -64,8 +64,8 @@ class FaultIsolationTest {
         assertThat(error.recordIndex()).isEqualTo(1);
         assertThat(error.kind()).isEqualTo(ErrorKind.RULE_EXCEPTION);
         assertThat(error.message()).contains("boom on r2");
-        assertThat(error.causeType()).isEqualTo(IllegalStateException.class.getName());
-        assertThat(error.cause()).isInstanceOf(IllegalStateException.class);
+        assertThat(error.causeType()).contains(IllegalStateException.class.getName());
+        assertThat(error.cause()).containsInstanceOf(IllegalStateException.class);
         assertThat(error.fieldsRead()).containsExactly(Map.entry("id", "r2"));
     }
 
@@ -89,7 +89,7 @@ class FaultIsolationTest {
             assertThat(e.kind()).isEqualTo(ErrorKind.UNMAPPED_VALUE);
             assertThat(e.ruleId()).contains("odd");
             assertThat(e.message()).contains("'surprise'");
-            assertThat(e.causeType()).isNull();
+            assertThat(e.causeType()).isEmpty();
         });
     }
 
@@ -130,7 +130,7 @@ class FaultIsolationTest {
         assertThat(resultCount(summary)).isEqualTo(9);
         assertThat(listener.errors()).hasSize(3).allSatisfy(e -> {
             assertThat(e.kind()).isEqualTo(ErrorKind.RULE_EXCEPTION);
-            assertThat(e.causeType()).isEqualTo(StackOverflowError.class.getName());
+            assertThat(e.causeType()).contains(StackOverflowError.class.getName());
         });
     }
 
@@ -141,7 +141,7 @@ class FaultIsolationTest {
                 rule("checked", f -> { throw new java.io.IOException("io"); }).build(),
                 rule("linkage", f -> { throw new NoClassDefFoundError("gone"); }).build());
 
-        assertThat(listener.errors()).hasSize(6).extracting(EvaluationError::causeType)
+        assertThat(listener.errors()).hasSize(6).extracting(e -> e.causeType().orElseThrow())
                 .containsOnly("java.io.IOException", "java.lang.NoClassDefFoundError");
     }
 
@@ -223,10 +223,30 @@ class FaultIsolationTest {
 
     @Test
     void outcomeTypesNameAMissingFieldsReadMap() {
-        assertThatThrownBy(() -> new EvaluationError(Optional.of("r"), "id", 0, ErrorKind.NULL_VALUE, "m", null,
-                null, null)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
+        assertThatThrownBy(() -> new EvaluationError("r", "id", 0, ErrorKind.NULL_VALUE, "m", null,
+                null)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
         assertThatThrownBy(() -> new dq.engine.run.Provenance("r", "l", "id", 0, null, "v",
                 dq.engine.run.Provenance.Basis.MAPPED)).isInstanceOf(NullPointerException.class).hasMessage("fieldsRead");
+    }
+
+    @Test
+    void anErrorIsAValueAndItsCauseStaysOnTheSide() {
+        var listener = new CollectingListener();
+        Rule throwing = rule("throwing", f -> { throw new IllegalStateException("boom"); }).build();
+        run(listener, throwing);
+        run(listener, throwing);
+
+        EvaluationError first = listener.errors().getFirst();
+        EvaluationError again = listener.errors().get(3); // the same cell, from the second run
+        assertThat(first.cause().orElseThrow()).isNotSameAs(again.cause().orElseThrow());
+        assertThat(first).isEqualTo(again).hasSameHashCodeAs(again);
+        assertThat(first.toString()).contains("throwing", "boom", IllegalStateException.class.getName())
+                .doesNotContain("Exception:");
+
+        var rebuilt = new EvaluationError(first.ruleId().orElseThrow(), first.recordId(), first.recordIndex(),
+                first.kind(), first.message(), first.causeType().orElseThrow(), first.fieldsRead());
+        assertThat(rebuilt).isEqualTo(first);
+        assertThat(rebuilt.cause()).isEmpty();
     }
 
     private static String recurse(int depth) {

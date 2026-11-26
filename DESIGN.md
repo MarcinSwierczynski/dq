@@ -58,6 +58,12 @@ Why this shape:
   `RunSummary`, and `Provenance` copy their collections defensively. The copies are shallow: a nested
   list or map read with `FieldReader.raw` is shared with the record, so logic and listeners must treat
   it as read-only.
+- **Outcomes are plain values.** `Result`, `Provenance` and `EvaluationError` hold strings, numbers,
+  enums and the fields read, so they compare, store and serialize without special cases. Optional
+  parts (an error's rule id and cause type, a result's explanation) are nullable fields exposed as
+  `Optional` accessors, not `Optional` components. The exception behind an engine-created error is
+  kept on the side, as `EvaluationError.cause()`, for logging: it is not part of `equals`, `hashCode`
+  or `toString`, and an error rebuilt from storage has none.
 - **Configuration errors fail fast; data errors are isolated.** An invalid catalog throws
   `InvalidCatalogException` from `Rule.builder().build()`, `DecisionMapping.build()`,
   `RuleCatalog.of`, or `DqEngine.Builder.build()`. This happens before any record runs. Invalid means
@@ -68,7 +74,8 @@ Why this shape:
   Logging goes through `System.Logger`. Jackson is an `implementation` dependency and never appears in
   the API: records cross the boundary as `Map<String, ?>`. Lombok is compile-time only (`requires
   static lombok`; `@Accessors(fluent = true)` keeps record-style accessors): it generates the accessors,
-  `equals`/`hashCode`/`toString` and builders of `Provenance`, `RunOptions` and `CountingListener`, and
+  `equals`/`hashCode`/`toString` and builders of `Provenance`, `EvaluationError`, `RunOptions` and
+  `CountingListener`, and
   nothing from it ships at runtime. Javadoc is built from the delomboked sources.
 - **Deterministic order.** Results come in input order, and within a record in catalog order
   (`FixtureScenarioTest.emitsInInputOrderThenCatalogOrder`). Callbacks run on the calling thread, so
