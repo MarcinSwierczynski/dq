@@ -1,5 +1,8 @@
-package dq.engine.source;
+package dq.engine.json;
 
+import dq.engine.source.RecordSource;
+import dq.engine.source.RecordSourceException;
+import dq.engine.source.SourceElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;

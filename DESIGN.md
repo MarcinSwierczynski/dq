@@ -1,8 +1,9 @@
 # DESIGN — dq-engine
 
-`dq-engine` is a framework-free Java library. It runs a catalog of data-quality rules over a stream
-of JSON-like records and pushes every outcome to a listener the host supplies. A Spring Boot app,
-`dq-http-example`, shows how a host embeds it. The full build plan and its decisions are in
+`dq-engine` is a framework-free Java library with no runtime dependencies. It runs a catalog of
+data-quality rules over a stream of JSON-like records and pushes every outcome to a listener the host
+supplies. `dq-engine-json` is a separate adapter module that reads records from JSON with Jackson. A
+Spring Boot app, `dq-http-example`, shows how a host embeds both. The full build plan and its decisions are in
 [`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-engine.md). The trade-offs made
 under the time-box, and designs for parallel evaluation and a per-rule circuit breaker, are in
 [`DETAILS.md`](DETAILS.md).
@@ -20,9 +21,15 @@ Code is grouped by feature, and `module-info.java` exports the three feature pac
 through), `dq.engine.source` (record input) and `dq.engine.run` (the engine, listeners, results and
 errors). Dependencies point one way: `run` uses `catalog` and `source`, which use nothing else in the
 library, so a rule can be written against `catalog` alone. `ArchitectureTest` fails the build on a
-package cycle. The loop, the JSON parsing, and the field
-tracking sit package-private next to the API they implement (`RunExecution` and `TrackingFieldReader`
-in `run`, `JsonArrayRecordSource` in `source`), so they are not part of the API.
+package cycle. The loop and the field tracking sit package-private next to the API they implement
+(`RunExecution` and `TrackingFieldReader` in `run`), so they are not part of the API.
+
+The JSON adapter is its own module, `dq-engine-json` (Java module `dq.engine.json`), exporting
+`JsonRecordSources`; its parser, `JsonArrayRecordSource`, is package-private. The core module
+requires nothing but the JDK, so embedding it cannot bring a library-version conflict into the host.
+A host that already has its own JSON stack can skip the adapter and implement `RecordSource` over it.
+`ArchitectureTest` also fails the build if a core class depends on anything outside `java..` and
+`dq.engine..`.
 
 | Type | Role |
 |---|---|
@@ -71,8 +78,9 @@ Why this shape:
   re-validates host-supplied catalogs, a DB-backed catalog cannot get around these checks
   (`RuleCatalogTest`).
 - **No hidden state.** There are no statics with behavior, no service loaders, and no framework.
-  Logging goes through `System.Logger`. Jackson is an `implementation` dependency and never appears in
-  the API: records cross the boundary as `Map<String, ?>`. Lombok is compile-time only (`requires
+  Logging goes through `System.Logger`. Records cross the boundary as `Map<String, ?>`, so the core
+  needs no JSON library; in `dq-engine-json`, Jackson is an `implementation` dependency and never
+  appears in its API. Lombok is compile-time only (`requires
   static lombok`; `@Accessors(fluent = true)` keeps record-style accessors): it generates the accessors,
   `equals`/`hashCode`/`toString` and builders of `Provenance`, `EvaluationError`, `RunOptions` and
   `CountingListener`, and
@@ -125,7 +133,7 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 
 ## 3. Bounded memory (F5)
 
-- `RecordSources.jsonArray` streams the input through Jackson's `JsonParser`. It holds **one** element
+- `JsonRecordSources.jsonArray` (in `dq-engine-json`) streams the input through Jackson's `JsonParser`. It holds **one** element
   at a time (`JsonArrayRecordSource`), and parsing begins inside `validate`, not when the source is
   created.
 - The engine pulls at most `batchSize` elements into a buffer and evaluates them. It pushes each
@@ -137,7 +145,8 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 - The bound assumes records of bounded size: one element is materialised whole. Jackson's default
   `StreamReadConstraints` limit string length and nesting depth, but by default not document length
   or token count, so a host that accepts untrusted input should also cap the request or message size.
-- **Proof** (`ScaleTest`, run by `scaleTest` with `maxHeapSize = "64m"`; `check` depends on it): 1,000,000
+- **Proof** (`ScaleTest` in `dq-engine-json`, run by its `scaleTest` task with `maxHeapSize = "64m"`;
+  `check` depends on it): 1,000,000
   generated records are streamed through the real `jsonArray` path against the 3 fixture rules. The
   run produces 3,000,000 outcomes, and on a laptop it takes about 0.7 s (~1.4M records/s). As a control,
   the same test with a `CollectingListener` fails under that cap with `OutOfMemoryError: Java heap
@@ -156,7 +165,7 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 | Seam | Built in | A host would plug in |
 |---|---|---|
 | `RuleCatalog` (`List<Rule> rules()`) | `RuleCatalog.of(…)` | DB-backed or versioned catalog service. It is read once at `build()`, so a run never sees a catalog change mid-way. Rebuild the engine (cheap) to pick up a new version. |
-| `RecordSource` (`SourceElement next()`, `close()`) | `RecordSources.of(List<Map>)`, `RecordSources.jsonArray(InputStream)` | Kafka consumer, JDBC cursor, S3 object. A non-record is reported with `SourceElement.unreadable(reason)`, and the run continues. Throwing means the stream is broken, and the run aborts. |
+| `RecordSource` (`SourceElement next()`, `close()`) | `RecordSources.of(List<Map>)`; `JsonRecordSources.jsonArray(InputStream)` in `dq-engine-json` | Kafka consumer, JDBC cursor, S3 object. A non-record is reported with `SourceElement.unreadable(reason)`, and the run continues. Throwing means the stream is broken, and the run aborts. |
 | `ValidationListener` | `CollectingListener`, `CountingListener` | DB batch writer, NDJSON writer (`dq-http-example/NdjsonListener`), metrics bridge |
 | `RuleFilter` | `all`, `status`, `countryScope`, `category`, `and`/`or`/`not` | Tenant- or job-specific selection (any lambda) |
 | Field names | `recordIdField` (default `id`), `countryField` (default `country`) | Other record schemas |

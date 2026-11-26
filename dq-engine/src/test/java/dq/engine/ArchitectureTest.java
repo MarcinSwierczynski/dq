@@ -1,5 +1,6 @@
 package dq.engine;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -18,5 +19,15 @@ class ArchitectureTest {
     @Test
     void featurePackagesAreFreeOfCycles() {
         slices().matching("dq.engine.(*)..").should().beFreeOfCycles().check(ENGINE);
+    }
+
+    /**
+     * The core has no runtime dependencies: JSON and other adapters live in their own modules. Lombok's
+     * {@code @Generated} marker has CLASS retention, so it is never loaded at runtime.
+     */
+    @Test
+    void theCoreDependsOnlyOnTheJdk() {
+        classes().should().onlyDependOnClassesThat().resideInAnyPackage("java..", "dq.engine..", "lombok")
+                .check(ENGINE);
     }
 }

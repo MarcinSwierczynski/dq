@@ -1,4 +1,4 @@
-package dq.engine;
+package dq.engine.json;
 
 import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +42,7 @@ class JsonArraySourceTest {
     void validatesTheFixtureFromJson() throws IOException {
         var listener = new CollectingListener();
         try (InputStream in = getClass().getResourceAsStream("fixture.json")) {
-            RunSummary summary = engine.validate(RecordSources.jsonArray(in), listener);
+            RunSummary summary = engine.validate(JsonRecordSources.jsonArray(in), listener);
             assertThat(resultCount(summary)).isEqualTo(9);
         }
         assertThat(byCell(listener)).hasSize(9);
@@ -59,7 +59,7 @@ class JsonArraySourceTest {
         String withNumber = text.replaceFirst("},\\s*\\{\\s*\"id\": \"r2\"", "}, 42, {\"id\": \"r2\"");
         var listener = new CollectingListener();
 
-        RunSummary summary = engine.validate(RecordSources.jsonArray(json(withNumber)), listener);
+        RunSummary summary = engine.validate(JsonRecordSources.jsonArray(json(withNumber)), listener);
 
         assertThat(summary.recordsRead()).isEqualTo(4);
         assertThat(resultCount(summary)).isEqualTo(9);
@@ -79,7 +79,7 @@ class JsonArraySourceTest {
     void nestedArraysStringsAndNullsAreUnreadable() {
         var listener = new CollectingListener();
         RunSummary summary = engine.validate(
-                RecordSources.jsonArray(json("[[1,[2]], \"x\", null, {\"id\":\"ok\",\"country\":\"DE\"}]")), listener);
+                JsonRecordSources.jsonArray(json("[[1,[2]], \"x\", null, {\"id\":\"ok\",\"country\":\"DE\"}]")), listener);
 
         assertThat(summary.recordsRead()).isEqualTo(4);
         assertThat(listener.errors()).extracting(EvaluationError::recordIndex).containsExactly(0L, 1L, 2L);
@@ -91,7 +91,7 @@ class JsonArraySourceTest {
         var listener = new CollectingListener();
         String truncated = "[{\"id\":\"r1\",\"country\":\"DE\",\"vatId\":\"DE111111111\",\"iban\":\"DE1\"}, {\"id\":\"r2\",";
 
-        assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(json(truncated)), listener))
+        assertThatThrownBy(() -> engine.validate(JsonRecordSources.jsonArray(json(truncated)), listener))
                 .isInstanceOfSatisfying(ValidationRunException.class, e -> {
                     assertThat(e.getCause()).isInstanceOf(RecordSourceException.class);
                     assertThat(e.partialSummary().status()).isEqualTo(RunStatus.ABORTED);
@@ -115,7 +115,7 @@ class JsonArraySourceTest {
             }
         };
 
-        assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(failing), new CollectingListener()))
+        assertThatThrownBy(() -> engine.validate(JsonRecordSources.jsonArray(failing), new CollectingListener()))
                 .isInstanceOfSatisfying(ValidationRunException.class, e -> assertThat(e.getCause())
                         .isInstanceOf(RecordSourceException.class)
                         .hasMessageStartingWith("could not read input")
@@ -125,7 +125,7 @@ class JsonArraySourceTest {
     @Test
     void inputThatIsNotAnArrayAborts() {
         for (String input : new String[] {"{\"id\":\"r1\"}", "", "   ", "[1,2] trailing", "[1,"}) {
-            assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(json(input)), new CollectingListener()))
+            assertThatThrownBy(() -> engine.validate(JsonRecordSources.jsonArray(json(input)), new CollectingListener()))
                     .as(input)
                     .isInstanceOf(ValidationRunException.class)
                     .hasCauseInstanceOf(RecordSourceException.class);
@@ -135,7 +135,7 @@ class JsonArraySourceTest {
     @Test
     void parsingStartsInsideValidateNotWhenTheSourceIsCreated() {
         var stream = new TrackingStream("not json");
-        RecordSource source = RecordSources.jsonArray(stream);
+        RecordSource source = JsonRecordSources.jsonArray(stream);
         assertThat(stream.reads).isZero();
         assertThatThrownBy(() -> engine.validate(source, new CollectingListener()))
                 .isInstanceOf(ValidationRunException.class);
@@ -145,11 +145,11 @@ class JsonArraySourceTest {
     @Test
     void theSourceClosesItsStreamOnSuccessAndOnFailure() {
         var ok = new TrackingStream("[]");
-        engine.validate(RecordSources.jsonArray(ok), new CollectingListener());
+        engine.validate(JsonRecordSources.jsonArray(ok), new CollectingListener());
         assertThat(ok.closed).isTrue();
 
         var broken = new TrackingStream("[{");
-        assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(broken), new CollectingListener()))
+        assertThatThrownBy(() -> engine.validate(JsonRecordSources.jsonArray(broken), new CollectingListener()))
                 .isInstanceOf(ValidationRunException.class);
         assertThat(broken.closed).isTrue();
     }
@@ -198,7 +198,7 @@ class JsonArraySourceTest {
     @Test
     void theSourceIsClosedEvenWhenValidateIsMisused() {
         var stream = new TrackingStream("[]");
-        assertThatThrownBy(() -> engine.validate(RecordSources.jsonArray(stream), null))
+        assertThatThrownBy(() -> engine.validate(JsonRecordSources.jsonArray(stream), null))
                 .isInstanceOf(NullPointerException.class);
         assertThat(stream.closed).isTrue();
     }

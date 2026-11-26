@@ -2,12 +2,12 @@ package dq.http;
 
 import dq.engine.catalog.RuleFilter;
 import dq.engine.catalog.RuleStatus;
+import dq.engine.json.JsonRecordSources;
 import dq.engine.run.DqEngine;
 import dq.engine.run.RunOptions;
 import dq.engine.run.RunSummary;
 import dq.engine.run.ValidationRunException;
 import dq.engine.source.RecordSourceException;
-import dq.engine.source.RecordSources;
 import dq.http.Views.RecordView;
 import dq.http.Views.SummaryView;
 import dq.http.Views.ValidationResponse;
@@ -70,7 +70,7 @@ class ValidationController {
         var grouping = new RecordGrouping(records::add);
         RunSummary summary;
         try {
-            summary = engine.validate(new RecordLimit(RecordSources.jsonArray(body), maxRecords), grouping, options);
+            summary = engine.validate(new RecordLimit(JsonRecordSources.jsonArray(body), maxRecords), grouping, options);
         } catch (ValidationRunException e) {
             throw switch (e.getCause()) {
                 case RecordLimit.Exceeded tooMany -> problem(HttpStatus.valueOf(413), "Too many records",
@@ -95,7 +95,7 @@ class ValidationController {
         StreamingResponseBody stream = out -> {
             var writer = new NdjsonListener(out, json);
             try {
-                RunSummary summary = engine.validate(RecordSources.jsonArray(body), writer, options);
+                RunSummary summary = engine.validate(JsonRecordSources.jsonArray(body), writer, options);
                 writer.finish();
                 writer.line("summary", SummaryView.of(summary));
             } catch (ValidationRunException e) {

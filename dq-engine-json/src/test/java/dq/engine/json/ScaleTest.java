@@ -1,4 +1,4 @@
-package dq.engine;
+package dq.engine.json;
 
 import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,14 +9,13 @@ import dq.engine.run.DqEngine;
 import dq.engine.run.RunOptions;
 import dq.engine.run.RunStatus;
 import dq.engine.run.RunSummary;
-import dq.engine.source.RecordSources;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * F5: one million records through the real streaming path ({@code RecordSources.jsonArray}). Runs in
+ * F5: one million records through the real streaming path ({@code JsonRecordSources.jsonArray}). Runs in
  * the {@code scaleTest} Gradle task with {@code -Xmx64m}; a run that accumulated outcomes or records
  * (3M results ≈ hundreds of MB) could not finish under that cap.
  */
@@ -31,7 +30,7 @@ class ScaleTest {
         var listener = new CountingListener();
         long maxHeap = Runtime.getRuntime().maxMemory();
 
-        RunSummary summary = engine.validate(RecordSources.jsonArray(new GeneratedRecords(RECORDS)), listener,
+        RunSummary summary = engine.validate(JsonRecordSources.jsonArray(new GeneratedRecords(RECORDS)), listener,
                 RunOptions.builder().batchSize(1000).build());
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);

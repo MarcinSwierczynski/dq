@@ -15,10 +15,8 @@ java {
     withJavadocJar()
 }
 
+// No runtime dependencies: JSON input lives in :dq-engine-json.
 dependencies {
-    // Internal only: Jackson types never appear in the exported API package.
-    implementation(libs.jackson.databind)
-
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
@@ -35,19 +33,5 @@ tasks.javadoc {
 }
 
 tasks.test {
-    useJUnitPlatform { excludeTags("scale") }
+    useJUnitPlatform()
 }
-
-// F5 proof: one million records through the real streaming input path under a 64 MB heap cap.
-val scaleTest = tasks.register<Test>("scaleTest") {
-    description = "Runs the bounded-memory scale test with a capped heap."
-    group = "verification"
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform { includeTags("scale") }
-    maxHeapSize = "64m"
-    testLogging { showStandardStreams = true }
-    shouldRunAfter(tasks.test)
-}
-
-tasks.check { dependsOn(scaleTest) }

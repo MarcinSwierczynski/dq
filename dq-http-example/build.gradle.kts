@@ -10,6 +10,7 @@ java {
 dependencies {
     implementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))
     implementation(project(":dq-engine"))
+    implementation(project(":dq-engine-json"))
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
 
     testImplementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))

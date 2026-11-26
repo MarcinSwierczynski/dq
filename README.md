@@ -1,7 +1,8 @@
 # dq — data-quality rule engine
 
-An embeddable Java 25 library (`dq-engine`) that validates business-partner records against a catalog
-of rules, plus a Spring Boot example host (`dq-http-example`). Design and trade-offs: [`DESIGN.md`](DESIGN.md).
+An embeddable Java 25 library (`dq-engine`, no runtime dependencies) that validates business-partner
+records against a catalog of rules, a JSON adapter for it (`dq-engine-json`, on Jackson), and a Spring
+Boot example host (`dq-http-example`). Design and trade-offs: [`DESIGN.md`](DESIGN.md).
 Spec: [`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-engine.md).
 
 ## Build and test
@@ -11,7 +12,8 @@ Requires a JDK 25 (Gradle toolchains pick it up); the wrapper downloads Gradle.
 ```sh
 ./gradlew build                      # compile, unit tests, scale test, javadoc, boot jar
 ./gradlew :dq-engine:test            # library unit tests only
-./gradlew :dq-engine:scaleTest       # 1,000,000 streamed records under -Xmx64m
+./gradlew :dq-engine-json:test       # JSON adapter tests
+./gradlew :dq-engine-json:scaleTest  # 1,000,000 streamed records under -Xmx64m
 ./gradlew :dq-http-example:test      # HTTP tests (MockMvc)
 ```
 
@@ -23,7 +25,7 @@ DqEngine engine = DqEngine.builder()
         .build();
 
 RunSummary summary = engine.validate(
-        RecordSources.jsonArray(inputStream),      // streamed; the source closes the stream
+        JsonRecordSources.jsonArray(inputStream),  // dq-engine-json; streamed, closes the stream
         listener,                                  // your ValidationListener: onResult / onError / onBatchComplete
         RunOptions.builder()
                 .batchSize(5_000)
@@ -64,7 +66,7 @@ The §5 fixture (12 results). The response has one entry per record, with result
 
 ```sh
 curl -s -X POST localhost:8080/validations -H 'Content-Type: application/json' \
-  --data-binary @dq-engine/src/test/resources/dq/engine/fixture.json
+  --data-binary @dq-engine-json/src/test/resources/dq/engine/json/fixture.json
 ```
 
 The fault demo: a record without `country`/`vatId`, plus a non-object element. It returns 15 results and
@@ -109,7 +111,7 @@ rule selection:
 ```sh
 curl -s -N -X POST 'localhost:8080/validations?category=tax&country=DE&batchSize=500' \
   -H 'Content-Type: application/json' -H 'Accept: application/x-ndjson' \
-  --data-binary @dq-engine/src/test/resources/dq/engine/fixture.json
+  --data-binary @dq-engine-json/src/test/resources/dq/engine/json/fixture.json
 ```
 
 | Parameter | Meaning |

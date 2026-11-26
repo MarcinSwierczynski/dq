@@ -17,8 +17,9 @@ Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](
   inflates output for heavily country-scoped catalogs. The mitigation today is `RuleFilter.countryScope`.
 - **JSON syntax errors abort the run.** An array parser cannot resynchronize after one. NDJSON input
   could skip a bad line instead.
-- **Jackson inside the library.** It stays internal, but a host on a conflicting Jackson 3.x could
-  still clash at runtime. Shading is the fix if that happens.
+- **Jackson in the JSON adapter.** The core has no dependencies; `dq-engine-json` uses Jackson 3
+  internally. A host on a conflicting Jackson 3.x could still clash at runtime if it uses the adapter.
+  It can then shade the adapter, or implement `RecordSource` over its own parser.
 - **Not built (it was optional):** `JsonRuleCatalog` + `LogicRegistry`, which would load rule
   definitions from JSON and resolve logic by name.
 - **Deviations from the spec:** there is no public `DataRecord`; the engine reads the id and country
