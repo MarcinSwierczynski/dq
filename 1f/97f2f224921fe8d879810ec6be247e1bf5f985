@@ -1,0 +1,46 @@
+dq-engine/src/main/java/dq/engine/catalog/Severity.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 3
+dq-engine/src/main/java/dq/engine/catalog/RuleExplainer.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 8,11
+dq-engine/src/main/java/dq/engine/source/SourceElement.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 24
+dq-engine/src/main/java/dq/engine/catalog/RuleLogic.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 9,13
+dq-engine/src/main/java/dq/engine/run/ErrorKind.java
+  s_17145f16c9f4be::t_f9b8dd6febf85b 3-4
+dq-engine/build.gradle.kts
+  s_17145f16c9f4be::t_f53a8bee96578e 25
+dq-engine/src/test/java/dq/engine/ArchitectureTest.java
+  s_17145f16c9f4be::t_f53a8bee96578e 1-22
+dq-engine/src/main/java/dq/engine/catalog/RuleCatalog.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 9
+dq-engine/src/main/java/dq/engine/run/TrackingFieldReader.java
+  s_17145f16c9f4be::t_f9b8dd6febf85b 3
+dq-engine/src/main/java/dq/engine/catalog/FieldReader.java
+  s_17145f16c9f4be::t_4a0549e1352fcc 1-35
+gradle/libs.versions.toml
+  s_17145f16c9f4be::t_f53a8bee96578e 7,16
+DESIGN.md
+  s_17145f16c9f4be::t_95914b5d657c06 19-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f97f2f224921fe8d879810ec6be247e1bf5f985",
+  "prompts": {},
+  "humans": {
+    "h_cb85b5763038ef": {
+      "author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  },
+  "sessions": {
+    "s_17145f16c9f4be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "79e67d49-6619-4c7a-886d-458303739a24",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
