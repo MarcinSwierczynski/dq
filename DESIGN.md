@@ -3,9 +3,14 @@
 `dq-engine` is a framework-free Java library with no runtime dependencies. It runs a catalog of
 data-quality rules over a stream of JSON-like records and pushes every outcome to a listener the host
 supplies. `dq-engine-json` is a separate adapter module that reads records from JSON with Jackson. A
-Spring Boot app, `dq-http-example`, shows how a host embeds both. The full build plan and its decisions are in
-[`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-engine.md). The trade-offs made
-under the time-box, and the design for a per-rule circuit breaker, are in [`DETAILS.md`](DETAILS.md).
+Spring Boot app, `dq-http-example`, shows how a host embeds both.
+
+This file is meant to be read on its own: the API and why it has this shape (§1), fault isolation
+(§2), bounded memory and parallelism (§3), the seams (§4), the example host (§5), assumptions (§6),
+trade-offs (§7) and next steps (§8). Two documents add detail but are not needed to review the
+design: [`docs/specs/2026-11-20-dq-rule-engine.md`](docs/specs/2026-11-20-dq-rule-engine.md) is the
+original build plan (where the code differs from it, §7 says how), and [`DETAILS.md`](DETAILS.md)
+designs the one planned feature not built yet, a per-rule circuit breaker.
 
 ```
 RecordSource ──► DqEngine.validate ──► per record × selected rule:
@@ -301,9 +306,44 @@ provenance is stored or returned.
 - JSON `null` counts as absent for `text`, `require`, and `has`, but provenance records it as
   `null`, so it can be told apart from `<absent>`.
 
-## 7. What I'd do next
+## 7. Trade-offs
 
-1. The per-rule circuit breaker ([DETAILS §2](DETAILS.md#2-adding-a-per-rule-circuit-breaker)), so a
+- **Parallel evaluation is opt-in, per record.** Sequential evaluation stays the default: it needs no
+  threads, and for cheap rules it is faster. The parallel unit is a record, not a (rule, record)
+  cell, which keeps one task's outcomes together for in-order delivery; a record with one slow rule
+  holds its slot in the window.
+- **Timeouts are opt-in.** Without `ruleTimeout` a rule that loops forever stalls the run; with it,
+  every evaluation pays for a virtual thread, and an abandoned rule that ignores interrupts keeps
+  running in the background.
+- **Logic is Java, definitions are data.** An expression language (CEL/JEXL) would make logic data
+  too, but it brings a sandbox, a type system, and error reporting that did not fit. `RuleLogic` is
+  the seam a `CelRuleLogic` would plug into.
+- **String values.** Mapping keys are simple and serializable. Numeric or enum values have to be
+  converted to strings in the logic.
+- **One `NOT_APPLICABLE` result per (record × foreign-country rule).** This is explicit, but it
+  inflates output for heavily country-scoped catalogs. The mitigation today is `RuleFilter.countryScope`.
+- **JSON syntax errors abort the run.** An array parser cannot resynchronize after one. NDJSON input
+  could skip a bad line instead.
+- **Jackson in the JSON adapter.** The core has no dependencies; `dq-engine-json` uses Jackson 3
+  internally. A host on a conflicting Jackson 3.x could still clash at runtime if it uses the adapter.
+  It can then shade the adapter, or implement `RecordSource` over its own parser.
+- **Deviations from the spec** (the original plan in `docs/specs`; the code and this file win):
+  - There is no public `DataRecord`; the engine reads the id and country from the field map, and the
+    field-access exception is internal (a smaller API). `RecordSource` is `SourceElement next()`,
+    where the sealed `SourceElement` is `Fields | Unreadable`, so a host source can report a
+    non-record without throwing.
+  - Packages are by feature (`catalog`, `source`, `run`) rather than `api`/`internal`, with
+    package-private implementation classes, and without a package cycle (§1).
+  - Jackson is not a dependency of `dq-engine`: JSON input and the JSON catalog live in
+    `dq-engine-json` (§1).
+  - The spec's Q4 chose sequential evaluation and listed per-rule timeouts as not handled. Both are
+    now built, opt-in, with sequential inline evaluation still the default (§2, §3).
+  - Step 16, the optional `JsonRuleCatalog` + `LogicRegistry`, is built (§4).
+  - `EvaluationError` is a final class rather than a record (§1).
+
+## 8. What I'd do next
+
+1. The per-rule circuit breaker ([DETAILS](DETAILS.md#adding-a-per-rule-circuit-breaker)), so a
    rule that keeps failing or timing out stops costing a thread and a timeout per record.
 2. Parse the input in parallel too (for example NDJSON split by line ranges), since the JSON parser on
    the calling thread is the bottleneck for cheap rules.

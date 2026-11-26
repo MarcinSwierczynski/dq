@@ -1,34 +1,9 @@
 # DETAILS — dq-engine
 
-Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](DESIGN.md).
+The design of planned work that is not built yet. Everything about what *is* built, including its
+trade-offs, is in [`DESIGN.md`](DESIGN.md).
 
-## 1. Trade-offs under the time-box
-
-- **Parallel evaluation is opt-in, per record.** Sequential evaluation stays the default: it needs no
-  threads, and for cheap rules it is faster. The parallel unit is a record, not a (rule, record)
-  cell, which keeps one task's outcomes together for in-order delivery; a record with one slow rule
-  holds its slot in the window.
-- **Timeouts are opt-in.** Without `ruleTimeout` a rule that loops forever stalls the run; with it,
-  every evaluation pays for a virtual thread, and an abandoned rule that ignores interrupts keeps
-  running in the background.
-- **Logic is Java, definitions are data.** An expression language (CEL/JEXL) would make logic data
-  too, but it brings a sandbox, a type system, and error reporting that did not fit. `RuleLogic` is
-  the seam a `CelRuleLogic` would plug into.
-- **String values.** Mapping keys are simple and serializable. Numeric or enum values have to be
-  converted to strings in the logic.
-- **One `NOT_APPLICABLE` result per (record × foreign-country rule).** This is explicit, but it
-  inflates output for heavily country-scoped catalogs. The mitigation today is `RuleFilter.countryScope`.
-- **JSON syntax errors abort the run.** An array parser cannot resynchronize after one. NDJSON input
-  could skip a bad line instead.
-- **Jackson in the JSON adapter.** The core has no dependencies; `dq-engine-json` uses Jackson 3
-  internally. A host on a conflicting Jackson 3.x could still clash at runtime if it uses the adapter.
-  It can then shade the adapter, or implement `RecordSource` over its own parser.
-- **Deviations from the spec:** there is no public `DataRecord`; the engine reads the id and country
-  from the field map, and the field-access exception is internal (a smaller API). `RecordSource` is
-  `SourceElement next()`, where the sealed `SourceElement` is `Fields | Unreadable`, so a host source
-  can report a non-record without throwing.
-
-## 2. Adding a per-rule circuit breaker
+## Adding a per-rule circuit breaker
 
 The breaker turns off a rule that keeps failing for the rest of the run, so it stops wasting time and
 flooding the listener with errors.
