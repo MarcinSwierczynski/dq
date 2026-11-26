@@ -1,13 +1,12 @@
 package dq.engine.catalog;
 
-import dq.engine.run.DqEngine;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Supplies the rules an engine evaluates. Hosts may implement it over a database or a catalog service;
- * {@link DqEngine.Builder#build()} reads it once and validates the result, so the engine never sees a
+ * {@link dq.engine.run.DqEngine.Builder#build()} reads it once and validates the result, so the engine never sees a
  * catalog change mid-run.
  */
 @FunctionalInterface

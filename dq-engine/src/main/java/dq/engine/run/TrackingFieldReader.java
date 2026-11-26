@@ -1,5 +1,6 @@
 package dq.engine.run;
 
+import dq.engine.catalog.FieldReader;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;

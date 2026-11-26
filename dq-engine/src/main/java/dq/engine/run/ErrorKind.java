@@ -1,5 +1,7 @@
 package dq.engine.run;
 
+import dq.engine.catalog.FieldReader;
+
 /**
  * Why an evaluation produced an {@link EvaluationError} instead of a {@link Result}.
  *

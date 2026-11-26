@@ -16,8 +16,11 @@ RecordSource ──► DqEngine.validate ──► per record × selected rule:
 ## 1. Public API, and why it has this shape
 
 Code is grouped by feature, and `module-info.java` exports the three feature packages:
-`dq.engine.catalog` (rules, mappings, scopes, filters), `dq.engine.source` (record input) and
-`dq.engine.run` (the engine, listeners, results and errors). The loop, the JSON parsing, and the field
+`dq.engine.catalog` (rules, mappings, scopes, filters, and the `FieldReader` rule logic reads
+through), `dq.engine.source` (record input) and `dq.engine.run` (the engine, listeners, results and
+errors). Dependencies point one way: `run` uses `catalog` and `source`, which use nothing else in the
+library, so a rule can be written against `catalog` alone. `ArchitectureTest` fails the build on a
+package cycle. The loop, the JSON parsing, and the field
 tracking sit package-private next to the API they implement (`RunExecution` and `TrackingFieldReader`
 in `run`, `JsonArrayRecordSource` in `source`), so they are not part of the API.
 

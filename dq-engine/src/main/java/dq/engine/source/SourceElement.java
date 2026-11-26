@@ -1,6 +1,5 @@
 package dq.engine.source;
 
-import dq.engine.run.ErrorKind;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,7 +21,7 @@ public sealed interface SourceElement permits SourceElement.Fields, SourceElemen
         }
     }
 
-    /** An element that is not a record; reported as {@link ErrorKind#UNREADABLE_RECORD}, and the run continues. */
+    /** An element that is not a record; reported as {@link dq.engine.run.ErrorKind#UNREADABLE_RECORD}, and the run continues. */
     record Unreadable(String reason) implements SourceElement {
         public Unreadable {
             Objects.requireNonNull(reason, "reason");
