@@ -1,7 +1,7 @@
 package dq.engine;
 
-import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dq.engine.catalog.Decision;
 import dq.engine.catalog.Severity;
@@ -89,13 +89,26 @@ class FixtureScenarioTest {
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
         assertThat(summary.recordsRead()).isEqualTo(3);
         assertThat(summary.rulesSelected()).isEqualTo(3);
-        assertThat(resultCount(summary)).isEqualTo(9);
+        assertThat(summary.resultCount()).isEqualTo(9);
         assertThat(summary.errorCount()).isZero();
         assertThat(summary.byDecision()).containsExactly(
                 Map.entry(Decision.VALID, 3L), Map.entry(Decision.INVALID, 4L),
                 Map.entry(Decision.REVIEW, 0L), Map.entry(Decision.NOT_APPLICABLE, 2L));
+        // Every result, by its rule's severity: countryBlocked and vatFormat (ERROR), ibanFormat (WARNING).
         assertThat(summary.bySeverity()).containsExactly(
+                Map.entry(Severity.ERROR, 6L), Map.entry(Severity.WARNING, 3L), Map.entry(Severity.INFO, 0L));
+        // Findings only: r2/vatFormat, r3/countryBlocked, r3/vatFormat (ERROR) and r3/ibanFormat (WARNING).
+        assertThat(summary.findingsBySeverity()).containsExactly(
                 Map.entry(Severity.ERROR, 3L), Map.entry(Severity.WARNING, 1L), Map.entry(Severity.INFO, 0L));
         assertThat(summary.duration()).isPositive();
+    }
+
+    @Test
+    void aSummaryWhoseCountsDoNotAddUpIsRejected() {
+        Map<Decision, Long> nineResults = Map.of(Decision.VALID, 9L);
+        assertThatThrownBy(() -> new RunSummary(3, 3, 8, 0, nineResults, Map.of(Severity.ERROR, 9L), Map.of(),
+                java.time.Duration.ZERO, RunStatus.COMPLETED)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RunSummary(3, 3, 9, 0, nineResults, Map.of(Severity.ERROR, 8L), Map.of(),
+                java.time.Duration.ZERO, RunStatus.COMPLETED)).isInstanceOf(IllegalArgumentException.class);
     }
 }

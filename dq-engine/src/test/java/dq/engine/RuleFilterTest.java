@@ -5,7 +5,6 @@ import static dq.engine.catalog.RuleFilter.category;
 import static dq.engine.catalog.RuleFilter.countryScope;
 import static dq.engine.catalog.RuleFilter.not;
 import static dq.engine.catalog.RuleFilter.status;
-import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -80,7 +79,7 @@ class RuleFilterTest {
 
         assertThat(summary.status()).isEqualTo(RunStatus.COMPLETED);
         assertThat(summary.rulesSelected()).isZero();
-        assertThat(resultCount(summary)).isZero();
+        assertThat(summary.resultCount()).isZero();
         assertThat(summary.recordsRead()).isEqualTo(3);
         assertThat(listener.results()).isEmpty();
     }

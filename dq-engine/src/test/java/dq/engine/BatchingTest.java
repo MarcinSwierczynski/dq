@@ -1,7 +1,6 @@
 package dq.engine;
 
 import static dq.engine.TestRules.okRule;
-import static dq.engine.fixtures.Fixture.resultCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,7 +65,7 @@ class BatchingTest {
         assertThat(listener.batches).containsExactly(
                 new BatchProgress(1, 1000, 1000), new BatchProgress(2, 1000, 2000), new BatchProgress(3, 500, 2500));
         assertThat(summary.recordsRead()).isEqualTo(2_500);
-        assertThat(resultCount(summary)).isEqualTo(5_000);
+        assertThat(summary.resultCount()).isEqualTo(5_000);
         assertThat(listener.events.subList(0, 2001)).endsWith("batch").filteredOn("batch"::equals).hasSize(1);
     }
 
@@ -163,7 +162,7 @@ class BatchingTest {
 
         assertThat(summary.status()).isEqualTo(RunStatus.CANCELLED);
         assertThat(summary.recordsRead()).isEqualTo(100);
-        assertThat(resultCount(summary)).isEqualTo(200);
+        assertThat(summary.resultCount()).isEqualTo(200);
         assertThat(((Recording) interruptAfterFirstBatch).results).isEqualTo(200);
         assertThat(Thread.currentThread().isInterrupted()).as("interrupt flag is preserved").isTrue();
     }

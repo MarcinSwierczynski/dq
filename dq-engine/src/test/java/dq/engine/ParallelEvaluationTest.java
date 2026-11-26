@@ -100,6 +100,8 @@ class ParallelEvaluationTest {
         assertThat(parallel.batches).isEqualTo(sequential.batches);
         assertThat(parallel.summary.byDecision()).isEqualTo(sequential.summary.byDecision());
         assertThat(parallel.summary.bySeverity()).isEqualTo(sequential.summary.bySeverity());
+        assertThat(parallel.summary.findingsBySeverity()).isEqualTo(sequential.summary.findingsBySeverity());
+        assertThat(parallel.summary.resultCount()).isEqualTo(sequential.summary.resultCount());
         assertThat(parallel.summary.errorCount()).isEqualTo(sequential.summary.errorCount()).isPositive();
         assertThat(parallel.summary.recordsRead()).isEqualTo(500);
         assertThat(parallel.callbackThreads).containsExactly(Thread.currentThread().getName());

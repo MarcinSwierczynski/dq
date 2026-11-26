@@ -49,15 +49,19 @@ class ValidationControllerTest {
     void validatesTheFixture() throws Exception {
         mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON).content(fixture()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.resultCount").doesNotExist())
+                .andExpect(jsonPath("$.summary.resultCount").value(12))
                 .andExpect(jsonPath("$.summary.errorCount").value(0))
                 .andExpect(jsonPath("$.summary.byDecision.VALID").value(4))
                 .andExpect(jsonPath("$.summary.byDecision.INVALID").value(4))
                 .andExpect(jsonPath("$.summary.byDecision.NOT_APPLICABLE").value(4))
-                // Findings only: r2/vatFormat, r3/countryBlocked, r3/vatFormat (ERROR) and r3/ibanFormat (WARNING).
-                .andExpect(jsonPath("$.summary.bySeverity.ERROR").value(3))
-                .andExpect(jsonPath("$.summary.bySeverity.WARNING").value(1))
+                // Every result: three ERROR rules and one WARNING rule on three records.
+                .andExpect(jsonPath("$.summary.bySeverity.ERROR").value(9))
+                .andExpect(jsonPath("$.summary.bySeverity.WARNING").value(3))
                 .andExpect(jsonPath("$.summary.bySeverity.INFO").value(0))
+                // Findings only: r2/vatFormat, r3/countryBlocked, r3/vatFormat (ERROR) and r3/ibanFormat (WARNING).
+                .andExpect(jsonPath("$.summary.findingsBySeverity.ERROR").value(3))
+                .andExpect(jsonPath("$.summary.findingsBySeverity.WARNING").value(1))
+                .andExpect(jsonPath("$.summary.findingsBySeverity.INFO").value(0))
                 .andExpect(jsonPath("$.records[0].recordIndex").doesNotExist())
                 .andExpect(jsonPath("$.summary.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.records", hasSize(3)))
@@ -111,7 +115,7 @@ class ValidationControllerTest {
         mvc.perform(post("/validations").contentType(MediaType.APPLICATION_JSON).content(faultDemo()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.recordsRead").value(5))
-                .andExpect(jsonPath("$.summary.resultCount").doesNotExist())
+                .andExpect(jsonPath("$.summary.resultCount").value(15))
                 .andExpect(jsonPath("$.summary.byDecision.VALID").value(4))
                 .andExpect(jsonPath("$.summary.byDecision.INVALID").value(5))
                 .andExpect(jsonPath("$.summary.byDecision.NOT_APPLICABLE").value(6))
@@ -217,7 +221,7 @@ class ValidationControllerTest {
         assertThat(lines.get(4).get("errors").get(0).get("kind").asString()).isEqualTo("UNREADABLE_RECORD");
         JsonNode last = lines.getLast();
         assertThat(last.get("type").asString()).isEqualTo("summary");
-        assertThat(last.has("resultCount")).isFalse();
+        assertThat(last.get("resultCount").asInt()).isEqualTo(15);
         assertThat(last.get("byDecision").get("INVALID").asInt()).isEqualTo(5);
         assertThat(last.get("errorCount").asInt()).isEqualTo(2);
     }
@@ -244,7 +248,7 @@ class ValidationControllerTest {
         assertThat(last.get("type").asString()).isEqualTo("aborted");
         assertThat(last.get("reason").asString()).contains("malformed JSON");
         assertThat(last.get("summary").get("status").asString()).isEqualTo("ABORTED");
-        assertThat(last.get("summary").has("resultCount")).isFalse();
+        assertThat(last.get("summary").get("resultCount").asInt()).isEqualTo(4);
         assertThat(last.get("summary").get("byDecision").get("VALID").asInt()
                 + last.get("summary").get("byDecision").get("INVALID").asInt()
                 + last.get("summary").get("byDecision").get("NOT_APPLICABLE").asInt()).isEqualTo(4);

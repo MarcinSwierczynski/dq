@@ -259,9 +259,9 @@ four rules from `rules.json` this way (`ExampleCatalog`), so the catalog seam ru
   §5 fixture reads as its table (one row per record, one column per rule). Each entry holds the
   decision, `provenance` (the rule's explanation, such as `len 4 instead of 9`, or its label when it
   gives none; the engine's fields read, computed value and basis are not sent) and, for `INVALID` and `REVIEW` only, the rule's severity: a passing or not-applicable check
-  is not a finding. The summary's `bySeverity` counts the same findings, by rule severity: for
-  the fixture `ERROR=3, WARNING=1`. Like `RunSummary`, the reply's summary has no separate result
-  count; see A8 for both choices. `errors` holds that record's rule errors, or the one
+  is not a finding. The reply's summary carries every `RunSummary` field (A8): `resultCount`,
+  `bySeverity` over all results and `findingsBySeverity`, which counts the same findings the
+  entries mark (for the fixture `ERROR=3, WARNING=1`). `errors` holds that record's rule errors, or the one
   `UNREADABLE_RECORD` error of a non-object element. The engine stays per-outcome; the host's
   `RecordGrouping` listener builds the groups. Outcomes arrive in input order and a record never
   spans batches, so it holds only the current record. Records are grouped by the engine's record
@@ -303,18 +303,13 @@ provenance is stored or returned.
 - **A5:** catalog problems are configuration errors and fail at build time.
 - **A6:** RELEASED is always enforced on top of the caller's filter.
 - **A7:** country codes are two-letter ISO codes, compared case-insensitively.
-- **A8 (F4, differs from the brief as written):** the brief asks the run summary for "the number of
-  results" and a breakdown of results by severity. `RunSummary` does both differently:
-  - *No `resultCount` field.* The number of results is the sum of `byDecision`, which has every
-    `Decision` as a key, so a separate field could only repeat it (the test helper
-    `Fixture.resultCount` sums it). It was removed in `2adc0c9`.
-  - *`bySeverity` counts findings, not all results.* Only `INVALID` and `REVIEW` results are counted
-    there, by their rule's severity; `VALID` and `NOT_APPLICABLE` results are not. A rule's severity
-    says how serious its *failure* is, so "3 ERROR" should mean three error-level problems, not three
-    checks of an error-level rule, most of which passed. For the fixture this gives
-    `ERROR=3, WARNING=1, INFO=0`, where counting all results would give `ERROR=6, WARNING=3`.
-  A host that wants all results by severity counts them in its listener (`Result.severity()` is on
-  every result). See also §7.
+- **A8 (F4):** the run summary counts results as the brief lists them. `resultCount` is the number
+  of results, and `bySeverity` breaks *all* of them down by their rule's severity, whatever the
+  decision. Because a rule's severity really says how serious its failure is, `findingsBySeverity`
+  also counts only the `INVALID` and `REVIEW` results: how many problems of each severity the run
+  found. For the §5 fixture: `resultCount = 9`, `bySeverity = ERROR 6, WARNING 3`,
+  `findingsBySeverity = ERROR 3, WARNING 1`. `RunSummary` rejects counts that do not add up
+  (`byDecision` and `bySeverity` must each sum to `resultCount`).
 - JSON `null` counts as absent for `text`, `require`, and `has`, but provenance records it as
   `null`, so it can be told apart from `<absent>`.
 
@@ -330,10 +325,9 @@ provenance is stored or returned.
 - **Logic is Java, definitions are data.** An expression language (CEL/JEXL) would make logic data
   too, but it brings a sandbox, a type system, and error reporting that did not fit. `RuleLogic` is
   the seam a `CelRuleLogic` would plug into.
-- **A run summary of findings (A8).** `bySeverity` answers "how many problems of each severity",
-  which is what a data steward triages by, at the price of not matching the brief's literal "results
-  by severity"; and the result count is left to `byDecision` rather than stored twice. Both are
-  one-line changes in `RunExecution.emit` and `RunSummary` if the literal reading is required.
+- **Two severity breakdowns (A8).** `bySeverity` is the brief's "results by severity", and
+  `findingsBySeverity` the number a data steward triages by. Keeping both costs one more map per
+  summary, and saves hosts from counting findings in their own listener.
 - **String values.** Mapping keys are simple and serializable. Numeric or enum values have to be
   converted to strings in the logic.
 - **One `NOT_APPLICABLE` result per (record × foreign-country rule).** This is explicit, but it

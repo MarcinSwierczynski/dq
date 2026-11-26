@@ -44,12 +44,14 @@ final class Views {
         }
     }
 
-    /** The run's totals. The number of results is the sum of {@code byDecision}, so it is not repeated. */
-    record SummaryView(long recordsRead, int rulesSelected, long errorCount,
-            Map<Decision, Long> byDecision, Map<Severity, Long> bySeverity, long durationMs, String status) {
+    /** The run's totals: every field of {@link RunSummary}, with the duration in milliseconds. */
+    record SummaryView(long recordsRead, int rulesSelected, long resultCount, long errorCount,
+            Map<Decision, Long> byDecision, Map<Severity, Long> bySeverity, Map<Severity, Long> findingsBySeverity,
+            long durationMs, String status) {
         static SummaryView of(RunSummary s) {
-            return new SummaryView(s.recordsRead(), s.rulesSelected(), s.errorCount(),
-                    s.byDecision(), s.bySeverity(), s.duration().toMillis(), s.status().name());
+            return new SummaryView(s.recordsRead(), s.rulesSelected(), s.resultCount(), s.errorCount(),
+                    s.byDecision(), s.bySeverity(), s.findingsBySeverity(), s.duration().toMillis(),
+                    s.status().name());
         }
     }
 
