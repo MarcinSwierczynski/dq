@@ -164,7 +164,7 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
 
 | Seam | Built in | A host would plug in |
 |---|---|---|
-| `RuleCatalog` (`List<Rule> rules()`) | `RuleCatalog.of(…)` | DB-backed or versioned catalog service. It is read once at `build()`, so a run never sees a catalog change mid-way. Rebuild the engine (cheap) to pick up a new version. |
+| `RuleCatalog` (`List<Rule> rules()`) | `RuleCatalog.of(…)`; `JsonRuleCatalog.read(json, LogicRegistry)` in `dq-engine-json` | DB-backed or versioned catalog service. It is read once at `build()`, so a run never sees a catalog change mid-way. Rebuild the engine (cheap) to pick up a new version. |
 | `RecordSource` (`SourceElement next()`, `close()`) | `RecordSources.of(List<Map>)`; `JsonRecordSources.jsonArray(InputStream)` in `dq-engine-json` | Kafka consumer, JDBC cursor, S3 object. A non-record is reported with `SourceElement.unreadable(reason)`, and the run continues. Throwing means the stream is broken, and the run aborts. |
 | `ValidationListener` | `CollectingListener`, `CountingListener` | DB batch writer, NDJSON writer (`dq-http-example/NdjsonListener`), metrics bridge |
 | `RuleFilter` | `all`, `status`, `countryScope`, `category`, `and`/`or`/`not` | Tenant- or job-specific selection (any lambda) |
@@ -176,6 +176,16 @@ not called (`ScopeAndSelectionTest`). Its provenance shows the country value it 
 level, `RuleFilter.countryScope("DE")` keeps WORLD and DE rules, for example for a per-country
 worker. Whatever the filter selects, the engine **always** intersects it with `status == RELEASED`
 (`RuleFilterTest`). A filter that selects nothing is a normal, completed run with `rulesSelected = 0`.
+
+**Rules as data.** `JsonRuleCatalog` (in `dq-engine-json`) reads rule definitions from a JSON
+document: id, label, mapping, status, severity, scope and categories are data, and each rule names
+its logic and explainer. The names resolve in a `LogicRegistry` (in the core, so any stored catalog
+can use it), which maps a name to `RuleLogic` / `RuleExplainer` code. The document is read and
+checked once: unknown properties, duplicate keys, unknown names and bad enum values are
+`InvalidCatalogException`s naming the rule, and the result goes through the same `RuleCatalog.of`
+checks as a code-built catalog. `JsonRuleCatalogTest` loads the §5 rules from JSON and gets results
+equal to the code-built catalog's, provenance and explanations included. The HTTP example loads its
+four rules from `rules.json` this way (`ExampleCatalog`), so the catalog seam runs end to end.
 
 ## 5. Example host (`dq-http-example`)
 
@@ -238,8 +248,8 @@ provenance is stored or returned.
 1. Parallel evaluation ([DETAILS §2](DETAILS.md#2-adding-parallel-evaluation)).
 2. Per-rule timeouts ([DETAILS §2](DETAILS.md#2-adding-parallel-evaluation)) and the circuit breaker
    ([DETAILS §3](DETAILS.md#3-adding-a-per-rule-circuit-breaker)).
-3. `JsonRuleCatalog` + `LogicRegistry`, then CEL-backed logic so rules can be authored without a
-   deployment.
+3. CEL-backed logic registered in the `LogicRegistry`, so new rule code can be authored without a
+   deployment (today only definitions can).
 4. NDJSON input with line-level recovery from malformed records.
 5. Rule version or hash in `Provenance` so stored results stay explainable after the catalog changes.
 6. A run option to suppress `OUT_OF_SCOPE` results, and a multi-country `CountryScope` variant.

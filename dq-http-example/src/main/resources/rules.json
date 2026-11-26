@@ -1,0 +1,45 @@
+{
+  "rules": [
+    {
+      "id": "countryBlocked",
+      "label": "Country is not blocked",
+      "logic": "countryBlocked",
+      "explainer": "countryBlocked",
+      "mapping": { "cases": { "blocked": "INVALID" }, "default": "NOT_APPLICABLE" },
+      "status": "RELEASED",
+      "severity": "ERROR",
+      "categories": ["compliance"]
+    },
+    {
+      "id": "vatFormat",
+      "label": "VAT id has a plausible length",
+      "logic": "vatMinLength9",
+      "explainer": "vatMinLength9",
+      "mapping": { "cases": { "ok": "VALID", "bad": "INVALID" } },
+      "status": "RELEASED",
+      "severity": "ERROR",
+      "categories": ["tax"]
+    },
+    {
+      "id": "ibanFormat",
+      "label": "IBAN starts with the record's country",
+      "logic": "ibanCountryPrefix",
+      "explainer": "ibanCountryPrefix",
+      "mapping": { "cases": { "ok": "VALID", "bad": "INVALID" } },
+      "status": "RELEASED",
+      "severity": "WARNING",
+      "categories": ["banking"]
+    },
+    {
+      "id": "deVatPrefix",
+      "label": "German VAT id starts with DE",
+      "logic": "vatPrefixDE",
+      "explainer": "vatPrefixDE",
+      "mapping": { "cases": { "ok": "VALID", "bad": "INVALID" } },
+      "status": "RELEASED",
+      "severity": "ERROR",
+      "scope": "DE",
+      "categories": ["tax"]
+    }
+  ]
+}

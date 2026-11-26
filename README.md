@@ -47,13 +47,24 @@ Rule vatFormat = Rule.builder()
         .build();
 ```
 
+Or keep the definitions as data and register only the code, by name (`dq-engine-json`):
+
+```java
+LogicRegistry registry = LogicRegistry.builder()
+        .logic("vatMinLength9", f -> f.text("vatId").filter(v -> v.length() >= 9).map(v -> "ok").orElse("bad"))
+        .build();
+RuleCatalog catalog = JsonRuleCatalog.read(rulesJson, registry);   // {"rules": [{"id": …, "logic": "vatMinLength9", …}]}
+```
+
 ## Run the HTTP example
 
 ```sh
 ./gradlew :dq-http-example:bootRun          # listens on :8080
 ```
 
-The example catalog is the three §5 rules plus `deVatPrefix`, a tax rule scoped to `DE`.
+The example catalog is the three §5 rules plus `deVatPrefix`, a tax rule scoped to `DE`. The definitions are
+data in [`rules.json`](dq-http-example/src/main/resources/rules.json); only the logic they name is Java
+(`ExampleCatalog`). Point `dq.http.catalog` at another file to change them without rebuilding.
 
 The §5 fixture (12 results). The response has one entry per record, with results keyed by rule id:
 `records[1].results.vatFormat` is `{"decision": "INVALID", "severity": "ERROR", "provenance": "len 4 instead of 9"}`:

@@ -20,8 +20,6 @@ Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](
 - **Jackson in the JSON adapter.** The core has no dependencies; `dq-engine-json` uses Jackson 3
   internally. A host on a conflicting Jackson 3.x could still clash at runtime if it uses the adapter.
   It can then shade the adapter, or implement `RecordSource` over its own parser.
-- **Not built (it was optional):** `JsonRuleCatalog` + `LogicRegistry`, which would load rule
-  definitions from JSON and resolve logic by name.
 - **Deviations from the spec:** there is no public `DataRecord`; the engine reads the id and country
   from the field map, and the field-access exception is internal (a smaller API). `RecordSource` is
   `SourceElement next()`, where the sealed `SourceElement` is `Fields | Unreadable`, so a host source
