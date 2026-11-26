@@ -105,6 +105,7 @@ always produces exactly one `Result` or one `EvaluationError`, and the run conti
 | Returns `null` | `NULL_VALUE` |
 | A value that is neither mapped nor covered by a default | `UNMAPPED_VALUE`, naming the value. The engine never picks a decision itself. |
 | The input element is not an object | `UNREADABLE_RECORD` (no rule), reported once for that element |
+| Runs longer than `RunOptions.ruleTimeout` (opt-in) | `TIMEOUT`, with the fields read until then. The rule is interrupted and abandoned, and the run moves on. |
 
 Every error says where the problem is: the rule id, the record id **and** its 0-based index (ids may
 be missing or duplicated), the kind, the message, the cause type, and the fields read before the
@@ -125,6 +126,23 @@ unchanged, before any record is read, and the source is still closed
 (`RuleFilterTest.aThrowingFilterPropagatesUnchangedBeforeAnyRecordAndTheSourceIsClosed`). An I/O failure on the input is
 reported as `could not read input`, separately from malformed JSON
 (`JsonArraySourceTest.anIoFailureIsReportedAsUnreadableInputNotAsMalformedJson`).
+
+**Per-rule timeouts.** `RunOptions.builder().ruleTimeout(Duration)` bounds one (rule, record)
+evaluation, logic and explainer together. Without it (the default) rule code runs inline on the
+calling thread, as before. With it, each evaluation runs on a fresh virtual thread and the calling
+thread waits at most the timeout (`Evaluator.timed`). An overrun becomes a `TIMEOUT` error for that
+cell, and the worker is interrupted and abandoned: the run never waits for it. The worker's
+`TrackingFieldReader` is then read from the calling thread, so in this mode it takes a lock, and the
+error can still list what the rule read before it hung. Everything else is unchanged: listener
+callbacks stay on the calling thread, `Error`s still propagate, and every other outcome equals the
+inline one (`RuleTimeoutTest.withATimeoutEveryOtherOutcomeIsTheSameAsWithout`). The costs are a
+virtual thread per evaluation, rule code that cannot rely on thread-locals of the calling thread, and
+a rule that ignores interrupts keeping its thread (and, if CPU-bound, a carrier thread) until it
+returns (`RuleTimeoutTest.aRuleThatIgnoresInterruptsIsAbandonedAndTheRunDoesNotWaitForIt`). The JVM
+cannot stop a thread safely, so that is the limit of any in-process timeout. Interrupting the
+calling thread while it waits still cancels the run (`CANCELLED`); a partly evaluated record then
+delivers nothing. The HTTP example sets `dq.http.rule-timeout=1s`, so one hung rule cannot hold a
+request.
 
 **Missing versus failing.** r3 has no `vatId` and is expected to be `INVALID`, not an error. So an
 *absent* field is normal input, handled through `Optional` (`fields.text`). A rule makes absence an
@@ -246,8 +264,8 @@ provenance is stored or returned.
 ## 7. What I'd do next
 
 1. Parallel evaluation ([DETAILS §2](DETAILS.md#2-adding-parallel-evaluation)).
-2. Per-rule timeouts ([DETAILS §2](DETAILS.md#2-adding-parallel-evaluation)) and the circuit breaker
-   ([DETAILS §3](DETAILS.md#3-adding-a-per-rule-circuit-breaker)).
+2. The per-rule circuit breaker ([DETAILS §3](DETAILS.md#3-adding-a-per-rule-circuit-breaker)), so a
+   rule that keeps failing or timing out stops costing a thread and a timeout per record.
 3. CEL-backed logic registered in the `LogicRegistry`, so new rule code can be authored without a
    deployment (today only definitions can).
 4. NDJSON input with line-level recovery from malformed records.

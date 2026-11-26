@@ -20,5 +20,10 @@ public enum ErrorKind {
     /** The computed value is not in the decision mapping and the mapping has no default. */
     UNMAPPED_VALUE,
     /** The input element is not a record (e.g. not a JSON object); reported once per element, without a rule. */
-    UNREADABLE_RECORD
+    UNREADABLE_RECORD,
+    /**
+     * The rule did not finish within {@link RunOptions#ruleTimeout()}; it was interrupted and abandoned.
+     * The error lists the fields it had read by then.
+     */
+    TIMEOUT
 }

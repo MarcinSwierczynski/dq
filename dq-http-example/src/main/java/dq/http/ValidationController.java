@@ -12,6 +12,7 @@ import dq.http.Views.RecordView;
 import dq.http.Views.SummaryView;
 import dq.http.Views.ValidationResponse;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,13 +50,16 @@ class ValidationController {
     private final JsonMapper json;
     private final int maxRecords;
     private final int maxBatchSize;
+    private final Duration ruleTimeout;
 
     ValidationController(DqEngine engine, JsonMapper json, @Value("${dq.http.max-records:10000}") int maxRecords,
-            @Value("${dq.http.max-batch-size:10000}") int maxBatchSize) {
+            @Value("${dq.http.max-batch-size:10000}") int maxBatchSize,
+            @Value("${dq.http.rule-timeout:1s}") Duration ruleTimeout) {
         this.engine = engine;
         this.json = json;
         this.maxRecords = maxRecords;
         this.maxBatchSize = maxBatchSize;
+        this.ruleTimeout = ruleTimeout;
     }
 
     @PostMapping(path = "/validations", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -130,7 +134,7 @@ class ValidationController {
             if (category != null && !category.isEmpty()) {
                 filter = filter.and(RuleFilter.category(category.toArray(String[]::new)));
             }
-            var builder = RunOptions.builder().filter(filter);
+            var builder = RunOptions.builder().filter(filter).ruleTimeout(ruleTimeout);
             if (batchSize != null) {
                 if (batchSize > maxBatchSize) {
                     throw new IllegalArgumentException(

@@ -6,8 +6,9 @@ Trade-offs and designs for work not built yet. The overview is in [`DESIGN.md`](
 
 - **Sequential evaluation.** It keeps callbacks single-threaded and output deterministic. The batch
   loop is the place to parallelize later (§2).
-- **No per-rule timeout.** A rule that loops forever stalls the run. Timeouts need a worker thread per
-  evaluation (see [next steps](DESIGN.md#7-what-id-do-next)).
+- **Timeouts are opt-in.** Without `ruleTimeout` a rule that loops forever stalls the run; with it,
+  every evaluation pays for a virtual thread, and an abandoned rule that ignores interrupts keeps
+  running in the background.
 - **Logic is Java, definitions are data.** An expression language (CEL/JEXL) would make logic data
   too, but it brings a sandbox, a type system, and error reporting that did not fit. `RuleLogic` is
   the seam a `CelRuleLogic` would plug into.
@@ -55,9 +56,9 @@ required to be thread-safe (`RuleLogic`, `RuleExplainer`), and each evaluation h
    that the parallel output equals the sequential output. Assert that every callback runs on the
    calling thread. Add a parallel `ScaleTest` under the 64 MB cap.
 
-Per-rule timeouts then come almost for free: `future.get(timeout)` emits a new `ErrorKind.TIMEOUT`
-(`ErrorKind` is open). Cancelling the task interrupts it, but a rule that ignores interrupts keeps its
-thread, so the run must not wait for it.
+Per-rule timeouts are built (see [DESIGN §2](DESIGN.md#2-fault-isolation-f3)); they already run each
+evaluation on its own thread, and `Evaluator` is thread-safe, so a parallel record task simply calls
+it.
 
 ## 3. Adding a per-rule circuit breaker
 
