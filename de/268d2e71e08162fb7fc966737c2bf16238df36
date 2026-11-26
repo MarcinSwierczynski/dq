@@ -1,0 +1,51 @@
+dq-engine-json/src/test/java/dq/engine/json/JsonArraySourceTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 45,64,98,224
+dq-engine/src/main/java/dq/engine/run/RunExecution.java
+  s_17145f16c9f4be::t_7db6f83a2fd4e3 41,44,240-241,243,265-266
+  s_17145f16c9f4be::t_1649c76bf547aa 222
+dq-engine/src/test/java/dq/engine/ScopeAndSelectionTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 100,107,119
+dq-http-example/src/main/java/dq/http/Views.java
+  s_17145f16c9f4be::t_1649c76bf547aa 47-50,52-54
+DESIGN.md
+  s_17145f16c9f4be::t_7c3b17ca237bed 262-264,306-312,328-330
+dq-engine/src/test/java/dq/engine/FaultIsolationTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 50,86,129,175
+dq-engine/src/test/java/dq/engine/ParallelEvaluationTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 103-104
+dq-engine/src/test/java/dq/engine/FixtureScenarioTest.java
+  s_17145f16c9f4be::t_c93104e2d3313c 4,105-112
+  s_17145f16c9f4be::t_1649c76bf547aa 92,97,99-101
+  s_17145f16c9f4be::t_1c90e383ee7583 113
+dq-engine/src/test/java/dq/engine/BatchingTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 68,165
+dq-http-example/src/test/java/dq/http/ValidationControllerTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 52,57-59,61-64,118,224,251
+dq-engine/src/main/java/dq/engine/run/RunSummary.java
+  s_17145f16c9f4be::t_7db6f83a2fd4e3 14-24,29,33,37,43-50
+dq-engine-json/src/test/java/dq/engine/json/ScaleTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 104,115
+dq-engine/src/test/java/dq/engine/RuleFilterTest.java
+  s_17145f16c9f4be::t_1649c76bf547aa 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "de268d2e71e08162fb7fc966737c2bf16238df36",
+  "prompts": {},
+  "humans": {
+    "h_cb85b5763038ef": {
+      "author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  },
+  "sessions": {
+    "s_17145f16c9f4be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "79e67d49-6619-4c7a-886d-458303739a24",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
