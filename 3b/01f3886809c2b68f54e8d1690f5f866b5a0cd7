@@ -1,0 +1,59 @@
+dq-http-example/src/main/java/dq/http/ValidationController.java
+  s_17145f16c9f4be::t_06cbcb8bba0c59 5
+  s_17145f16c9f4be::t_0cce6c37d6acfc 73,98
+dq-engine-json/src/main/java/dq/engine/json/JsonArrayRecordSource.java
+  s_17145f16c9f4be::t_0cce6c37d6acfc 3-5
+  s_17145f16c9f4be::t_da9a1d0459c4dc 1-2,6-123
+dq-engine/src/main/java/dq/engine/source/RecordSources.java
+  s_17145f16c9f4be::t_0cce6c37d6acfc 8-11
+dq-engine/src/test/java/dq/engine/ArchitectureTest.java
+  s_17145f16c9f4be::t_6b5279afa2bb55 3,23,28-29
+  s_17145f16c9f4be::t_9ef771ff41ad65 24-27,30-31
+  s_17145f16c9f4be::t_308546beeea26c 32
+dq-engine-json/src/main/java/module-info.java
+  s_17145f16c9f4be::t_06cbcb8bba0c59 1-10
+dq-engine/build.gradle.kts
+  s_17145f16c9f4be::t_0cce6c37d6acfc 18,36
+dq-engine-json/src/test/java/dq/engine/json/ScaleTest.java
+  s_17145f16c9f4be::t_da9a1d0459c4dc 1-102
+dq-engine-json/src/main/java/dq/engine/json/JsonRecordSources.java
+  s_17145f16c9f4be::t_06cbcb8bba0c59 1-22
+dq-engine-json/src/test/java/dq/engine/json/JsonArraySourceTest.java
+  s_17145f16c9f4be::t_da9a1d0459c4dc 1-17,19-248
+  s_17145f16c9f4be::t_90e0f6860d8488 18
+dq-engine-json/build.gradle.kts
+  s_17145f16c9f4be::t_06cbcb8bba0c59 1-47
+dq-http-example/build.gradle.kts
+  s_17145f16c9f4be::t_0cce6c37d6acfc 13
+dq-engine/src/main/java/module-info.java
+  s_17145f16c9f4be::t_0cce6c37d6acfc 4-5
+settings.gradle.kts
+  s_17145f16c9f4be::t_0cce6c37d6acfc 8
+DESIGN.md
+  s_17145f16c9f4be::t_2d5cd6eef04ddf 3-6,24-32,81-83,136,148-149,168
+DETAILS.md
+  s_17145f16c9f4be::t_a0e5a724746422 20-22
+README.md
+  s_17145f16c9f4be::t_36a1c343d925cd 3-5,15-16,28,69,114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3b01f3886809c2b68f54e8d1690f5f866b5a0cd7",
+  "prompts": {},
+  "humans": {
+    "h_cb85b5763038ef": {
+      "author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  },
+  "sessions": {
+    "s_17145f16c9f4be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "79e67d49-6619-4c7a-886d-458303739a24",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Marcin Świerczyński <marcin@swierczynski.net>"
+    }
+  }
+}
