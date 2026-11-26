@@ -163,11 +163,18 @@ is why the fault demo's r4 yields `MISSING_REQUIRED_FIELD`.
   `StreamReadConstraints` limit string length and nesting depth, but by default not document length
   or token count, so a host that accepts untrusted input should also cap the request or message size.
 - **Proof** (`ScaleTest` in `dq-engine-json`, run by its `scaleTest` task with `maxHeapSize = "64m"`;
-  `check` depends on it): 1,000,000
-  generated records are streamed through the real `jsonArray` path against the 3 fixture rules. The
-  run produces 3,000,000 outcomes, and on a laptop it takes about 0.7 s (~1.4M records/s). As a control,
-  the same test with a `CollectingListener` fails under that cap with `OutOfMemoryError: Java heap
-  space`, so the cap really separates streaming from accumulation.
+  `check` depends on it): 1,000,000 generated records are streamed through the real `jsonArray` path
+  against the 3 fixture rules, sequentially and on a thread pool. Each run produces 3,000,000
+  outcomes, and on a laptop it takes about 0.8 s (~1.3M records/s).
+- **Measured, not just survived.** Finishing under 64 MB shows the run does not accumulate hundreds of
+  MB, but not how much it keeps. So the test subscribes to the JVM's GC notifications and records the
+  heap left after every collection during the run, which bounds the live set from above (raw used
+  heap is no measure: it climbs to the cap before each collection whatever is live). It asserts that
+  this peak stays within 16 MB of the heap before the run. Measured over ~130 collections: peak
+  **8.6 MB after GC against a 7.1 MB baseline**, so the run keeps about 1.5 MB for a million records,
+  in both modes. A control in the same class (`theMeasurementDetectsALeakingListener`) keeps every
+  outcome of just 20,000 records in a `CollectingListener` and grows by about 25 MB, so the bound
+  does catch accumulation; with all 1,000,000 records that listener fails with `OutOfMemoryError`.
 - The batch is the host's commit point (flush a DB batch, commit an offset). `BatchingTest` checks
   the 1000/1000/500 split.
 - Cancellation: the engine checks the thread's interrupt flag between records, returns `CANCELLED`
